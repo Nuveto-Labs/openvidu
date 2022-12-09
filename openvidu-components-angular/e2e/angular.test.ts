@@ -872,10 +872,31 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 
 		await browser.sleep(500);
 
-		// Checking if fullscreen button is not present
 		await utils.waitForElement('.mat-menu-content');
 
-		expect(await utils.isPresent('fullscreen-btn')).to.be.false;
+		// Checking if fullscreen button is not present
+		expect(await utils.isPresent('#fullscreen-btn')).to.be.false;
+	});
+
+	it('should HIDE the STREAMING button', async () => {
+		await browser.get(`${url}`);
+
+		await utils.clickOn('#ovToolbar-checkbox');
+
+		await utils.clickOn('#streamingButton-checkbox');
+
+		await utils.clickOn('#apply-btn');
+
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+		await browser.sleep(500);
+
+		await utils.waitForElement('.mat-menu-content');
+
+		// Checking if fullscreen button is not present
+		expect(await utils.isPresent('#streaming-btn')).to.be.false;
 	});
 
 	it('should HIDE the LEAVE button', async () => {
@@ -1004,6 +1025,78 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 		await utils.waitForElement('#custom-activities-panel');
 
 		expect(await utils.isPresent('ov-recording-activity')).to.be.false;
+	});
+
+	it('should HIDE the STREAMING activity', async () => {
+		await browser.get(`${url}`);
+
+		await utils.clickOn('#ovActivitiesPanel-checkbox');
+
+		await utils.clickOn('#streamingActivity-checkbox');
+
+		await utils.clickOn('#apply-btn');
+
+		await utils.checkToolbarIsPresent();
+
+		await utils.clickOn('#activities-panel-btn');
+
+		await browser.sleep(500);
+
+		await utils.waitForElement('#default-activities-panel');
+
+		await utils.waitForElement('ov-recording-activity');
+
+		expect(await utils.isPresent('ov-streaming-activity')).to.be.false;
+	});
+
+	it('should SHOW STARTING STREAMING status', async () => {
+		await browser.get(`${url}`);
+
+		await utils.clickOn('#ovToolbar-checkbox');
+
+		await utils.clickOn('#streamingInfo-checkbox');
+
+		await utils.clickOn('#apply-btn');
+
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+		await browser.sleep(500);
+
+		await utils.waitForElement('.mat-menu-content');
+
+		const status = await utils.waitForElement('#streaming-status');
+
+		expect(await status.getAttribute('innerText')).equals('STARTED');
+	});
+
+	it('should SHOW STREAMING ERROR', async () => {
+		await browser.get(`${url}`);
+
+		await utils.clickOn('#ovToolbar-checkbox');
+
+		await utils.clickOn('#streamingInfo-checkbox');
+
+		await utils.clickOn('#apply-btn');
+
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+		await browser.sleep(500);
+
+		await utils.waitForElement('.mat-menu-content');
+
+		const status = await utils.waitForElement('#streaming-status');
+
+		expect(await status.getAttribute('innerText')).equals('FAILED');
+
+		await utils.clickOn('#streaming-activity');
+		await browser.sleep(500);
+		const error = await utils.waitForElement('#streaming-error');
+		expect(await error.getAttribute('innerText')).equals('{"message": "err"}');
+
 	});
 });
 

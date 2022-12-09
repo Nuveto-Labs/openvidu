@@ -21,7 +21,7 @@ export class RecordingActivityComponent implements OnInit {
 
 	/**
 	 * Provides event notifications that fire when start recording button has been clicked.
-	 * The recording should be stopped using the REST API.
+	 * The recording should be started using the REST API.
 	 */
 	@Output() onStartRecordingClicked: EventEmitter<void> = new EventEmitter<void>();
 

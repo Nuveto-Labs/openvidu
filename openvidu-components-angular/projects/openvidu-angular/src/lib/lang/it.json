@@ -101,6 +101,16 @@
 			"DOWNLOAD": "Scarica",
 			"RECORDINGS": "REGISTRAZIONI",
 			"NO_MODERATOR": "Solo il MODERATORE può avviare la registrazione"
+		},
+		"STREAMING": {
+			"TITLE": "Streaming",
+			"SUBTITLE": "Trasmetti in streaming la tua riunione al tuo pubblico",
+			"CONTENT_SUBTITLE": "OpenVidu necessita dell'URL RTMP della piattaforma di streaming",
+			"START": "Avvia lo streaming",
+			"STOP": "Termina lo streaming",
+			"URL": "Inserisci il tuo URL RTMP",
+			"CANCEL": "Annulla",
+			"REQUIRED_URL": "RTMP url è obbligatorio"
 		}
 	},
 	"ERRORS": {

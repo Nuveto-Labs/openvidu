@@ -101,6 +101,15 @@
 			"DOWNLOAD": "Descargar",
 			"RECORDINGS": "GRABACIONES",
 			"NO_MODERATOR": "Sólo el MODERADOR puede iniciar la grabación"
+		},
+		"STREAMING": {
+			"TITLE": "Streaming",
+			"SUBTITLE": "Comparte tu llamada con tu público",
+			"CONTENT_SUBTITLE": "OpenVidu necesita la url RTMP de tu plataforma de streaming.",
+			"START": "Empezar streaming",
+			"STOP": "Finalizar streaming",
+			"URL": "Inserta tu url RTMP",
+			"CANCEL": "Cancelar"
 		}
 	},
 	"ERRORS": {

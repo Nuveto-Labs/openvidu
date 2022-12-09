@@ -101,6 +101,16 @@
 			"DOWNLOAD": "Downloaden",
 			"RECORDINGS": "OPNAME",
 			"NO_MODERATOR": "Alleen de MOEDERATOR kan de opname starten"
+		},
+		"STREAMING": {
+			"TITLE": "Streamen",
+			"SUBTITLE": "Stream je meeting naar je publiek",
+			"CONTENT_SUBTITLE": "OpenVidu heeft de RTMP url van de streaming platform nodig.",
+			"START": "Start streamen",
+			"STOP": "Stop streamen",
+			"URL": "Voer je RTMP url in",
+			"CANCEL": "Annuleren",
+			"REQUIRED_URL": "RTMP url is verplicht"
 		}
 	},
 	"ERRORS": {

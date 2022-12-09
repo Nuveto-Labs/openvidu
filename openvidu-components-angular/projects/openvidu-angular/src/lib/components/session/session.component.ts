@@ -32,7 +32,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
 import { MatDrawerContainer, MatSidenav } from '@angular/material/sidenav';
 import { skip, Subscription } from 'rxjs';
 import { SidenavMode } from '../../models/layout.model';
-import { PanelType } from '../../models/panel.model';
+import { PanelEvent, PanelType } from '../../models/panel.model';
 import { Signal } from '../../models/signal.model';
 import { ActionService } from '../../services/action/action.service';
 import { CaptionService } from '../../services/caption/caption.service';
@@ -41,7 +41,7 @@ import { OpenViduAngularConfigService } from '../../services/config/openvidu-ang
 import { LayoutService } from '../../services/layout/layout.service';
 import { LoggerService } from '../../services/logger/logger.service';
 import { OpenViduService } from '../../services/openvidu/openvidu.service';
-import { PanelEvent, PanelService } from '../../services/panel/panel.service';
+import { PanelService } from '../../services/panel/panel.service';
 import { ParticipantService } from '../../services/participant/participant.service';
 import { PlatformService } from '../../services/platform/platform.service';
 import { RecordingService } from '../../services/recording/recording.service';
