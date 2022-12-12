@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RecordingInfo, RecordingService, TokenModel } from 'openvidu-angular';
+import { RecordingInfo, TokenModel } from 'openvidu-angular';
 import { RestService } from '../services/rest.service';
 
 @Component({
@@ -17,8 +17,9 @@ export class CallComponent implements OnInit {
 	isSessionAlive: boolean = false;
 	recordingList: RecordingInfo[] = [];
 	recordingError: any;
+	streamingError: any;
 
-	constructor(private restService: RestService, private recordingService: RecordingService) { }
+	constructor(private restService: RestService) { }
 
 	async ngOnInit() {
 		await this.requestForTokens();
@@ -81,13 +82,30 @@ export class CallComponent implements OnInit {
 		console.log('TOOLBAR LEAVE CLICKED');
 	}
 
+	async onStartStreamingClicked(rtmpUrl: string){
+		console.log('START STREAMING', rtmpUrl);
+		try {
+			// await this.restService.startStreaming(rtmpUrl);
+		} catch (error) {
+			this.streamingError = error;
+		}
+	}
+
+	async onStopStreamingClicked(){
+		console.log('STOP STREAMING',);
+		try {
+			// await this.restService.stopStreaming();
+		} catch (error) {
+			this.streamingError = error;
+		}
+	}
+
 	async onStartRecordingClicked() {
 		console.warn('START RECORDING CLICKED');
 		try {
 			await this.restService.startRecording(this.sessionId);
 		} catch (error) {
 			this.recordingError = error;
-
 		}
 	}
 	async onStopRecordingClicked() {

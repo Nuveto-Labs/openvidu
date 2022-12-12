@@ -51,8 +51,8 @@
 		<span>
 			<ul>
 				<li *ngFor="let dir of directive.directives">
-					<mat-checkbox [id]="dir + '-checkbox'" (change)="updateApiDirective(dir, $event.checked)" [checked]="true">
-						{{ dir }}
+					<mat-checkbox [id]="dir.name + '-checkbox'" (change)="updateApiDirective(dir.name, $event.checked)" [checked]="dir.checked">
+						{{ dir.name }}
 					</mat-checkbox>
 				</li>
 			</ul>
@@ -80,6 +80,7 @@
 			[chatPanelButton]="chatPanelBtn"
 			[displaySessionName]="displaySessionId"
 			[displayLogo]="displayLogo"
+			[streamingButton]="streamingBtn"
 			(onLeaveButtonClicked)="appendElement('onLeaveButtonClicked')"
 			(onCameraButtonClicked)="appendElement('onCameraButtonClicked')"
 			(onMicrophoneButtonClicked)="appendElement('onMicrophoneButtonClicked')"
@@ -197,7 +198,14 @@
 	</ng-template>
 
 	<ng-template [ngIf]="!ovPanelSelected && ovActivitiesPanelSelected">
-		<ov-activities-panel *ovActivitiesPanel [recordingActivity]="recordingActivity" id="custom-activities-panel"></ov-activities-panel>
+		<ov-activities-panel
+			*ovActivitiesPanel
+			[recordingActivity]="recordingActivity"
+			[streamingActivity]="streamingActivity"
+			[streamingInfo]="streamingInfo"
+			[streamingError]="streamingError"
+			id="custom-activities-panel"
+		></ov-activities-panel>
 	</ng-template>
 
 	<ng-template [ngIf]="!ovPanelSelected && ovParticipantsPanelSelected">
