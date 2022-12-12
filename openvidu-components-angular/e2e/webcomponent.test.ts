@@ -594,13 +594,12 @@ describe('Testing API Directives', () => {
 		await utils.waitForElement('ov-streaming-activity');
 		expect(await utils.isPresent('ov-streaming-activity')).to.be.true;
 
-		await utils.waitForElement('.failed');
-		expect(await utils.isPresent('.failed')).to.be.true;
+		const status = await utils.waitForElement('#streaming-status');
+		expect(await status.getAttribute('innerText')).equals('FAILED');
 
 		// Open streaming
 		await browser.sleep(1000);
-		element = await utils.waitForElement('ov-streaming-activity');
-		await element.click();
+		await utils.clickOn('ov-streaming-activity');
 
 		element = await utils.waitForElement('#streaming-error');
 		expect(await element.getAttribute('innerText')).equal('"TEST_ERROR"');

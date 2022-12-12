@@ -165,7 +165,7 @@ export class TestingComponent implements OnInit {
 	tokens: { webcam: any; screen: any };
 
 	subscription: Subscription;
-	streamingError: { message: string; };
+	streamingError: string;
 
 	recordingActivity = true;
 
@@ -309,7 +309,7 @@ export class TestingComponent implements OnInit {
 				break;
 
 			case AttributeDirective.ACTIVITIES_PANEL_STREAMING_ERROR:
-				this.streamingError = { message: 'err' };
+				this.streamingError = 'TEST_ERROR';
 				break;
 			default:
 				break;

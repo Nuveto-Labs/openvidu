@@ -24,6 +24,7 @@ describe('Testing TOOLBAR STRUCTURAL DIRECTIVES', () => {
 	});
 
 	afterEach(async () => {
+		// console.log('data:image/png;base64,' + await browser.takeScreenshot());
 		await browser.quit();
 	});
 
@@ -779,6 +780,7 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 	});
 
 	afterEach(async () => {
+		// console.log('data:image/png;base64,' + await browser.takeScreenshot());
 		await browser.quit();
 	});
 
@@ -1041,7 +1043,7 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 
 		await browser.sleep(500);
 
-		await utils.waitForElement('#default-activities-panel');
+		await utils.waitForElement('#custom-activities-panel');
 
 		await utils.waitForElement('ov-recording-activity');
 
@@ -1051,7 +1053,7 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 	it('should SHOW STARTING STREAMING status', async () => {
 		await browser.get(`${url}`);
 
-		await utils.clickOn('#ovToolbar-checkbox');
+		await utils.clickOn('#ovActivitiesPanel-checkbox');
 
 		await utils.clickOn('#streamingInfo-checkbox');
 
@@ -1060,10 +1062,12 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 		await utils.checkToolbarIsPresent();
 
 		// Open more options menu
-		await utils.clickOn('#more-options-btn');
+		await utils.clickOn('#activities-panel-btn');
+
 		await browser.sleep(500);
 
-		await utils.waitForElement('.mat-menu-content');
+		await utils.waitForElement('#custom-activities-panel');
+		console.log('before');
 
 		const status = await utils.waitForElement('#streaming-status');
 
@@ -1073,19 +1077,19 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 	it('should SHOW STREAMING ERROR', async () => {
 		await browser.get(`${url}`);
 
-		await utils.clickOn('#ovToolbar-checkbox');
+		await utils.clickOn('#ovActivitiesPanel-checkbox');
 
-		await utils.clickOn('#streamingInfo-checkbox');
+		await utils.clickOn('#streamingError-checkbox');
 
 		await utils.clickOn('#apply-btn');
 
 		await utils.checkToolbarIsPresent();
 
-		// Open more options menu
-		await utils.clickOn('#more-options-btn');
+		await utils.clickOn('#activities-panel-btn');
+
 		await browser.sleep(500);
 
-		await utils.waitForElement('.mat-menu-content');
+		await utils.waitForElement('#custom-activities-panel');
 
 		const status = await utils.waitForElement('#streaming-status');
 
@@ -1094,7 +1098,7 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 		await utils.clickOn('#streaming-activity');
 		await browser.sleep(500);
 		const error = await utils.waitForElement('#streaming-error');
-		expect(await error.getAttribute('innerText')).equals('{"message": "err"}');
+		expect(await error.getAttribute('innerText')).equals('"TEST_ERROR"');
 
 	});
 });

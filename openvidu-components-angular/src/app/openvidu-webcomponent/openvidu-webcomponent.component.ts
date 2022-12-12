@@ -149,6 +149,11 @@ export class OpenviduWebComponentComponent implements OnInit {
 	_streamingActivityStreamingInfo: StreamingInfo;
 
 	/**
+	 * @internal
+	 */
+	_streamingActivityStreamingError: any;
+
+	/**
 	 * The **minimal** attribute applies a minimal UI hiding all controls except for cam and mic.
 	 *
 	 * Default: `false`
@@ -549,6 +554,19 @@ export class OpenviduWebComponentComponent implements OnInit {
 	 */
 	@Input() set streamingActivityStreamingInfo(value: StreamingInfo) {
 		this._streamingActivityStreamingInfo = value;
+	}
+
+
+	/**
+	 * The **streamingActivityStreamingError** attribute allows to show any possible error with the streaming in the {@link StreamingActivityComponent}.
+	 *
+	 * Default: `undefined`
+	 *
+	 * @example
+	 * <openvidu-webcomponent streaming-activity-streaming-error="streamingError"></openvidu-webcomponent>
+	 */
+	 @Input() set streamingActivityStreamingError(value: any) {
+		this._streamingActivityStreamingError = value;
 	}
 
 	/**
