@@ -26,9 +26,9 @@
         "@types/chai": "4.3.0",
         "@types/mocha": "9.1.0",
         "@types/node": "16.11.6",
-        "@types/selenium-webdriver": "4.1.9",
+        "@types/selenium-webdriver": "4.1.5",
         "chai": "4.3.6",
-        "chromedriver": "108.0.0",
+        "chromedriver": "106.0.1",
         "codelyzer": "6.0.2",
         "concat": "^1.0.3",
         "cross-env": "^7.0.3",
@@ -75,7 +75,7 @@
         "webcomponent:e2e-ci": "cross-env LAUNCH_MODE=CI npm run webcomponent:e2e",
         "webcomponent:e2e-pro": "tsc --project ./e2e && npx mocha --recursive --timeout 30000 ./e2e/dist/webcomponent.pro.test.js",
         "webcomponent:e2e-pro-ci": "cross-env LAUNCH_MODE=CI npm run webcomponent:e2e-pro",
-        "webcomponent:serve-testapp": "npx http-server ./e2e/webcomponent-app/"
+        "webcomponent:serve-testapp": "npx http-server ./e2e/webcomponent-app/ && echo 'http://localhost:8080?OV_URL=https://localhost:4443&OV_SECRET=MY_SECRET'"
     },
     "version": "2.24.0"
 }

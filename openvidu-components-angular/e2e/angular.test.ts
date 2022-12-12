@@ -5,7 +5,6 @@ import { AngularConfig } from './selenium.conf';
 import { OpenViduComponentsPO } from './utils.po.test';
 
 const url = AngularConfig.appUrl;
-const TIMEOUT = 30000;
 
 describe('Testing TOOLBAR STRUCTURAL DIRECTIVES', () => {
 	let browser: WebDriver;
