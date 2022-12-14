@@ -201,8 +201,6 @@ export class SessionComponent implements OnInit, OnDestroy {
 				//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
 				this.subscribeToStreamingEvents();
 			}
-			this.onSessionCreated.emit(this.session);
-
 		}
 		this.preparing = false;
 		this.cd.markForCheck();
