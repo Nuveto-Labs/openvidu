@@ -116,12 +116,9 @@ export class StreamingActivityComponent implements OnInit {
 	startStreaming() {
 		if (!!this.rtmpUrl) {
 			this.streamingError = undefined;
-			this.onStartStreamingClicked.emit(this.rtmpUrl);
 			this.streamingService.updateStatus(StreamingStatus.STARTING);
-			if (this.isSessionCreator) {
-				//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
-				this.openviduService.sendSignal(Signal.STREAMING_STARTED);
-			}
+
+			this.onStartStreamingClicked.emit(this.rtmpUrl);
 		}
 		this.urlRequiredError = !this.rtmpUrl;
 	}
@@ -129,10 +126,6 @@ export class StreamingActivityComponent implements OnInit {
 	stopStreaming() {
 		this.onStopStreamingClicked.emit();
 		this.streamingService.updateStatus(StreamingStatus.STOPPING);
-		if (this.isSessionCreator) {
-			//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
-			this.openviduService.sendSignal(Signal.STREAMING_STOPPED);
-		}
 	}
 
 	private subscribeToStreamingStatus() {
@@ -142,6 +135,12 @@ export class StreamingActivityComponent implements OnInit {
 				if (!!ev) {
 					this.streamingStatus = ev.status;
 					this.cd.markForCheck();
+				}
+
+				if (this.isSessionCreator) {
+					//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
+					const signal = this.streamingStatus === StreamingStatus.STARTED ? Signal.STREAMING_STARTED : Signal.STREAMING_STOPPED;
+					this.openviduService.sendSignal(signal);
 				}
 			});
 	}
