@@ -1,7 +1,10 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { skip, Subscription } from 'rxjs';
+import { Signal } from '../../../../models/signal.model';
 import { StreamingInfo, StreamingStatus } from '../../../../models/streaming.model';
 import { OpenViduAngularConfigService } from '../../../../services/config/openvidu-angular.config.service';
+import { OpenViduService } from '../../../../services/openvidu/openvidu.service';
+import { ParticipantService } from '../../../../services/participant/participant.service';
 import { StreamingService } from '../../../../services/streaming/streaming.service';
 
 /**
@@ -62,14 +65,18 @@ export class StreamingActivityComponent implements OnInit {
 	private streamingSub: Subscription;
 	private streamingInfoSub: Subscription;
 	private streamingErrorSub: Subscription;
+	isSessionCreator: boolean = false;
 
 	constructor(
 		private streamingService: StreamingService,
+		private participantService: ParticipantService,
+		private openviduService: OpenViduService,
 		private libService: OpenViduAngularConfigService,
 		private cd: ChangeDetectorRef
 	) {}
 
 	ngOnInit(): void {
+		this.isSessionCreator = this.participantService.amIModerator();
 		this.subscribeToStreamingStatus();
 		this.subscribeToStreamingInfo();
 		this.subscribeToStreamingError();
@@ -78,7 +85,7 @@ export class StreamingActivityComponent implements OnInit {
 	ngOnDestroy() {
 		if (this.streamingSub) this.streamingSub.unsubscribe();
 		if (this.streamingInfoSub) this.streamingInfoSub.unsubscribe();
-		if(this.streamingErrorSub) this.streamingErrorSub.unsubscribe();
+		if (this.streamingErrorSub) this.streamingErrorSub.unsubscribe();
 	}
 
 	/**
@@ -111,6 +118,10 @@ export class StreamingActivityComponent implements OnInit {
 			this.streamingError = undefined;
 			this.onStartStreamingClicked.emit(this.rtmpUrl);
 			this.streamingService.updateStatus(StreamingStatus.STARTING);
+			if (this.isSessionCreator) {
+				//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
+				this.openviduService.sendSignal(Signal.STREAMING_STARTED);
+			}
 		}
 		this.urlRequiredError = !this.rtmpUrl;
 	}
@@ -118,16 +129,10 @@ export class StreamingActivityComponent implements OnInit {
 	stopStreaming() {
 		this.onStopStreamingClicked.emit();
 		this.streamingService.updateStatus(StreamingStatus.STOPPING);
-	}
-
-	resetStatus() {
-		let status: StreamingStatus = this.oldStreamingStatus;
-		if (this.oldStreamingStatus === StreamingStatus.STARTING) {
-			status = StreamingStatus.STOPPED;
-		} else if (this.oldStreamingStatus === StreamingStatus.STOPPING) {
-			status = StreamingStatus.STARTED;
+		if (this.isSessionCreator) {
+			//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
+			this.openviduService.sendSignal(Signal.STREAMING_STOPPED);
 		}
-		this.streamingService.updateStatus(status);
 	}
 
 	private subscribeToStreamingStatus() {

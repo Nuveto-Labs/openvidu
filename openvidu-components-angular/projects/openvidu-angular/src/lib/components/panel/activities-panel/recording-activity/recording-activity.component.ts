@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { OpenViduRole } from '../../../../models/participant.model';
 import { RecordingInfo, RecordingStatus } from '../../../../models/recording.model';
 import { ActionService } from '../../../../services/action/action.service';
 import { OpenViduAngularConfigService } from '../../../../services/config/openvidu-angular.config.service';
@@ -95,7 +94,7 @@ export class RecordingActivityComponent implements OnInit {
 	ngOnInit(): void {
 		this.subscribeToRecordingStatus();
 		this.subscribeToRecordingActivityDirective();
-		this.isSessionCreator = this.participantService.getMyRole() === OpenViduRole.MODERATOR;
+		this.isSessionCreator = this.participantService.amIModerator();
 	}
 
 	/**

@@ -48,7 +48,15 @@
 				/>
 			</div>
 
-			<div class="input-container" id="streaming-url-input" fxFlex="55px" fxFlexOrder="3" fxLayoutAlign="space-evenly none">
+			<!-- Streaming button -->
+			<div
+				*ngIf="isSessionCreator"
+				class="input-container"
+				id="streaming-url-input"
+				fxFlex="55px"
+				fxFlexOrder="3"
+				fxLayoutAlign="space-evenly none"
+			>
 				<input
 					placeholder="{{ 'PANEL.STREAMING.URL' | translate }}"
 					[disabled]="streamingStatus !== streamingStatusEnum.STOPPED && streamingStatus !== streamingStatusEnum.FAILED"
@@ -76,45 +84,15 @@
 					<mat-icon matTooltip="{{ 'PANEL.STREAMING.STOP' | translate }}">stop_circle</mat-icon>
 				</button>
 			</div>
-			<p>{{ 'CONTENT_SUBTITLE' | translate }}</p>
-			<p *ngIf="urlRequiredError" class="error-text" id="required-url-error">{{ 'PANEL.STREAMING.REQUIRED_URL' | translate }}</p>
-			<p *ngIf="streamingError" class="error-text" id="streaming-error">{{ streamingError | json }}</p>
 
-			<!-- Streaming button -->
-			<!-- <div *ngIf="isSessionCreator" class="item streaming-action-buttons">
-				<button *ngIf="streamingAlive" mat-flat-button id="stop-streaming-btn" (click)="stopStreaming()">
-					<span>{{ 'TOOLBAR.STOP_STREAMING' | translate }}</span>
-				</button>
-
-				<button
-					*ngIf="streamingStatus === streamingStatusEnum.STOPPED"
-					[disabled]="!rtmpUrl"
-					mat-flat-button
-					id="start-streaming-btn"
-					(click)="startStreaming()"
-				>
-					<span *ngIf="streamingStatus === streamingStatusEnum.STOPPED">{{ 'TOOLBAR.START_STREAMING' | translate }}</span>
-				</button>
-
-				<span *ngIf="streamingStatus === streamingStatusEnum.STARTING">{{ 'PANEL.STREAMING.STARTING' | translate }} </span>
-				<span *ngIf="streamingStatus === streamingStatusEnum.STOPPING">{{ 'PANEL.STREAMING.STOPPING' | translate }} </span>
-				<span *ngIf="streamingStatus === streamingStatusEnum.FAILED">Message: </span>
-				<span *ngIf="streamingStatus === streamingStatusEnum.FAILED" class="streaming-error">{{ streamingError | json }} </span>
-				<div>
-					<button
-						*ngIf="streamingStatus === streamingStatusEnum.FAILED"
-						mat-flat-button
-						id="reset-streaming-status-btn"
-						(click)="resetStatus()"
-					>
-						<span>{{ 'PANEL.STREAMING.RESTORE' | translate }}</span>
-					</button>
-				</div>
-			</div> -->
+			<div *ngIf="isSessionCreator" >
+				<p>{{ 'CONTENT_SUBTITLE' | translate }}</p>
+				<p *ngIf="urlRequiredError" class="error-text" id="required-url-error">{{ 'PANEL.STREAMING.REQUIRED_URL' | translate }}</p>
+				<p *ngIf="streamingError" class="error-text" id="streaming-error">{{ streamingError | json }}</p>
+			</div>
 
 			<!-- Message for no Moderators-->
-			<!-- <p *ngIf="!isSessionCreator" class="not-allowed-message">{{ 'PANEL.STREAMING.NO_MODERATOR' | translate }}</p> -->
+			<p *ngIf="!isSessionCreator" class="not-allowed-message">{{ 'PANEL.STREAMING.NO_MODERATOR' | translate }}</p>
 		</div>
-		<!-- <mat-divider *ngIf="streamingsList.length > 0"></mat-divider> -->
 	</div>
 </mat-expansion-panel>

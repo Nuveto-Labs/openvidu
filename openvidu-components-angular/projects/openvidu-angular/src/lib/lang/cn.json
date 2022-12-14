@@ -110,7 +110,8 @@
 			"STOP": "结束直播",
 			"URL": "输入您的RTMP URL",
 			"CANCEL": "取消",
-			"REQUIRED_URL": "RTMP url 是必需的"
+			"REQUIRED_URL": "RTMP url 是必需的",
+			"NO_MODERATOR": "只有主持人才能开始流媒体"
 		}
 	},
 	"ERRORS": {

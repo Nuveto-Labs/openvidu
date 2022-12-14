@@ -110,7 +110,8 @@
 			"STOP": "Streaming beenden",
 			"URL": "Geben Sie Ihre RTMP-URL ein",
 			"CANCEL": "Absagen",
-			"REQUIRED_URL": "RTMP url ist erforderlich"
+			"REQUIRED_URL": "RTMP url ist erforderlich",
+			"NO_MODERATOR": "Nur der Moderator kann den Stream starten"
 		}
 	},
 	"ERRORS": {

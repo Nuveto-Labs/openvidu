@@ -109,7 +109,8 @@
 			"START": "Empezar streaming",
 			"STOP": "Finalizar streaming",
 			"URL": "Inserta tu url RTMP",
-			"CANCEL": "Cancelar"
+			"CANCEL": "Cancelar",
+			"NO_MODERATOR": "Sólo el MODERADOR puede iniciar el streaming"
 		}
 	},
 	"ERRORS": {

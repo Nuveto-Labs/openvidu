@@ -110,7 +110,8 @@
 			"STOP": "Finalizar transmissão",
 			"URL": "Insira seu url RTMP",
 			"CANCEL": "Cancelar",
-			"REQUIRED_URL": "O URL RTMP é obrigatório"
+			"REQUIRED_URL": "O URL RTMP é obrigatório",
+			"NO_MODERATOR": "Somente o MODERADOR pode iniciar a transmissão"
 		}
 	},
 	"ERRORS": {

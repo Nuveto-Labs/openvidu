@@ -110,7 +110,8 @@
 			"STOP": "Arrêter la diffusion",
 			"URL": "Insérez votre URL RTMP",
 			"CANCEL": "Annuler",
-			"REQUIRED_URL": "L'URL RTMP est obligatoire"
+			"REQUIRED_URL": "L'URL RTMP est obligatoire",
+			"NO_MODERATOR": "Seul le MODÉRATEUR peut démarrer le streaming"
 		}
 	},
 	"ERRORS": {

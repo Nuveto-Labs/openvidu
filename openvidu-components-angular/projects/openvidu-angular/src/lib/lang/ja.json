@@ -110,7 +110,9 @@
 			"STOP": "ストリーミングを終了",
 			"URL": "RTMP URLを入力してください",
 			"CANCEL": "キャンセル",
-			"REQUIRED_URL": "RTMP url は必須です"
+			"REQUIRED_URL": "RTMP url は必須です",
+			"NO_MODERATOR": "モデレーターのみがストリーミングを開始できます"
+
 		}
 	},
 	"ERRORS": {

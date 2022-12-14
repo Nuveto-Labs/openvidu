@@ -460,7 +460,7 @@ export class ToolbarComponent implements OnInit, OnDestroy, AfterViewInit {
 	ngAfterViewInit() {
 		// Sometimes the connection is undefined so we have to check the role when the mat menu is opened
 		this.menuTrigger?.menuOpened.subscribe(() => {
-			this.isSessionCreator = this.participantService.getMyRole() === OpenViduRole.MODERATOR;
+			this.isSessionCreator = this.participantService.amIModerator();
 		});
 	}
 

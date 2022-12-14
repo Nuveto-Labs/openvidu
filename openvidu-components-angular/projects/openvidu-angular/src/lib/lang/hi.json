@@ -110,7 +110,8 @@
 			"STOP": "स्ट्रीमिंग बंद करें",
 			"URL": "अपना RTMP url दर्ज करें",
 			"CANCEL": "रद्द करें",
-			"REQUIRED_URL": "RTMP url आवश्यक है"
+			"REQUIRED_URL": "RTMP url आवश्यक है",
+			"NO_MODERATOR": "केवल मोडेरेटर स्ट्रीमिंग शुरू कर सकते हैं"
 		}
 	},
 	"ERRORS": {

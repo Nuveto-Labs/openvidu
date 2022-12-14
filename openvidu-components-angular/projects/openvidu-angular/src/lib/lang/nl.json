@@ -110,7 +110,8 @@
 			"STOP": "Stop streamen",
 			"URL": "Voer je RTMP url in",
 			"CANCEL": "Annuleren",
-			"REQUIRED_URL": "RTMP url is verplicht"
+			"REQUIRED_URL": "RTMP url is verplicht",
+			"NO_MODERATOR": "Alleen de moderator kan de streaming starten"
 		}
 	},
 	"ERRORS": {

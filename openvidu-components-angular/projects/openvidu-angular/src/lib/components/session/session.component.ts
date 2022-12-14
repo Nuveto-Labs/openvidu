@@ -34,6 +34,7 @@ import { skip, Subscription } from 'rxjs';
 import { SidenavMode } from '../../models/layout.model';
 import { PanelEvent, PanelType } from '../../models/panel.model';
 import { Signal } from '../../models/signal.model';
+import { StreamingStatus } from '../../models/streaming.model';
 import { ActionService } from '../../services/action/action.service';
 import { CaptionService } from '../../services/caption/caption.service';
 import { ChatService } from '../../services/chat/chat.service';
@@ -45,6 +46,7 @@ import { PanelService } from '../../services/panel/panel.service';
 import { ParticipantService } from '../../services/participant/participant.service';
 import { PlatformService } from '../../services/platform/platform.service';
 import { RecordingService } from '../../services/recording/recording.service';
+import { StreamingService } from '../../services/streaming/streaming.service';
 import { TranslateService } from '../../services/translate/translate.service';
 import { VirtualBackgroundService } from '../../services/virtual-background/virtual-background.service';
 
@@ -99,6 +101,7 @@ export class SessionComponent implements OnInit, OnDestroy {
 		protected layoutService: LayoutService,
 		protected panelService: PanelService,
 		private recordingService: RecordingService,
+		private streamingService: StreamingService,
 		private translateService: TranslateService,
 		private captionService: CaptionService,
 		private platformService: PlatformService,
@@ -193,6 +196,13 @@ export class SessionComponent implements OnInit, OnDestroy {
 				await this.openviduService.publishVideo(false);
 				await this.openviduService.publishVideo(true);
 			}
+
+			if (!this.participantService.amIModerator()) {
+				//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
+				this.subscribeToStreamingEvents();
+			}
+			this.onSessionCreated.emit(this.session);
+
 		}
 		this.preparing = false;
 		this.cd.markForCheck();
@@ -435,6 +445,16 @@ export class SessionComponent implements OnInit, OnDestroy {
 
 		this.session.on('recordingStopped', (event: RecordingEvent) => {
 			this.recordingService.stopRecording(event);
+		});
+	}
+
+	private subscribeToStreamingEvents() {
+		this.session.on(`signal:${Signal.STREAMING_STARTED}`, (event: any) => {
+			this.streamingService.updateStatus(StreamingStatus.STARTED);
+		});
+
+		this.session.on(`signal:${Signal.STREAMING_STOPPED}`, (event: any) => {
+			this.streamingService.updateStatus(StreamingStatus.STOPPED);
 		});
 	}
 
