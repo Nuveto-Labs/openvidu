@@ -338,7 +338,7 @@ export class TestingComponent implements OnInit {
 
 	async getToken(sessionId: string): Promise<string> {
 		const id = await this.createSession(sessionId);
-		return await this.createToken(id);
+		return await this.createConnection(id);
 	}
 
 	createSession(sessionId: string) {
@@ -383,9 +383,9 @@ export class TestingComponent implements OnInit {
 		});
 	}
 
-	createToken(sessionId): Promise<string> {
+	createConnection(sessionId): Promise<string> {
 		return new Promise((resolve, reject) => {
-			const body = {};
+			const body = {role: 'MODERATOR'};
 			const options = {
 				headers: new HttpHeaders({
 					Authorization: 'Basic ' + btoa('OPENVIDUAPP:' + this.OPENVIDU_SERVER_SECRET),
