@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { skip, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { Signal } from '../../../../models/signal.model';
 import { StreamingInfo, StreamingStatus } from '../../../../models/streaming.model';
 import { OpenViduAngularConfigService } from '../../../../services/config/openvidu-angular.config.service';
@@ -129,20 +129,20 @@ export class StreamingActivityComponent implements OnInit {
 	}
 
 	private subscribeToStreamingStatus() {
-		this.streamingSub = this.streamingService.streamingStatusObs
-			.pipe(skip(1))
-			.subscribe((ev: { status: StreamingStatus; time?: Date } | undefined) => {
+		this.streamingSub = this.streamingService.streamingStatusObs.subscribe(
+			(ev: { status: StreamingStatus; time?: Date } | undefined) => {
 				if (!!ev) {
 					this.streamingStatus = ev.status;
 					this.cd.markForCheck();
+					if (this.isSessionCreator) {
+						//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
+						const signal =
+							this.streamingStatus === StreamingStatus.STARTED ? Signal.STREAMING_STARTED : Signal.STREAMING_STOPPED;
+						this.openviduService.sendSignal(signal);
+					}
 				}
-
-				if (this.isSessionCreator) {
-					//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
-					const signal = this.streamingStatus === StreamingStatus.STARTED ? Signal.STREAMING_STARTED : Signal.STREAMING_STOPPED;
-					this.openviduService.sendSignal(signal);
-				}
-			});
+			}
+		);
 	}
 
 	//TODO: Remove this directive when RTMP Exported was included on OV and streaming ready event was fired.
