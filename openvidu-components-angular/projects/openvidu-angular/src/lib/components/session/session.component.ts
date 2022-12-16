@@ -185,10 +185,6 @@ export class SessionComponent implements OnInit, OnDestroy {
 			this.subscribeToNicknameChanged();
 			this.chatService.subscribeToChat();
 			this.subscribeToReconnection();
-			const recordingEnabled = this.libService.recordingButton.getValue() && this.libService.recordingActivity.getValue();
-			if (recordingEnabled) {
-				this.subscribeToRecordingEvents();
-			}
 
 			await this.connectToSession();
 			// ios devices appear with blank video. Muting and unmuting it fix this problem
@@ -197,7 +193,11 @@ export class SessionComponent implements OnInit, OnDestroy {
 				await this.openviduService.publishVideo(true);
 			}
 
-			if (!this.participantService.amIModerator()) {
+			if (this.libService.isRecordingEnabled()) {
+				this.subscribeToRecordingEvents();
+			}
+
+			if (this.libService.isStreamingEnabled() && !this.participantService.amIModerator()) {
 				//TODO: Remove it when RTMP Exported was included on OV and streaming ready event was fired.
 				this.subscribeToStreamingEvents();
 			}

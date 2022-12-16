@@ -141,4 +141,12 @@ export class OpenViduAngularConfigService {
 	getParticipantFactory(): ParticipantFactoryFunction {
 		return this.getConfig().participantFactory;
 	}
+
+	isRecordingEnabled(): boolean {
+		return this.recordingButton.getValue() && this.recordingActivity.getValue();
+	}
+
+	isStreamingEnabled(): boolean {
+		return this.streamingButton.getValue() && this.streamingActivity.getValue();
+	}
 }
