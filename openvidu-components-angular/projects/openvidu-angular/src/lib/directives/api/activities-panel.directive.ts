@@ -1,5 +1,5 @@
 import { AfterViewInit, Directive, ElementRef, Input, OnDestroy } from '@angular/core';
-import { StreamingInfo } from '../../models/streaming.model';
+import { StreamingInfo, StreamingStatus } from '../../models/streaming.model';
 import { OpenViduAngularConfigService } from '../../services/config/openvidu-angular.config.service';
 
 /**
@@ -199,6 +199,12 @@ export class StreamingActivityStreamingInfoDirective implements AfterViewInit, O
 
 	update(value: StreamingInfo | undefined) {
 		if (this.libService.streamingInfo.getValue() !== value) {
+			if(value) {
+				// Forced value to right enum
+				const index = Object.values(StreamingStatus).indexOf(value.status.toLowerCase()  as unknown as StreamingStatus);
+				const key = Object.keys(StreamingStatus)[index];
+				value.status = StreamingStatus[key];
+			}
 			this.libService.streamingInfo.next(value);
 		}
 	}
