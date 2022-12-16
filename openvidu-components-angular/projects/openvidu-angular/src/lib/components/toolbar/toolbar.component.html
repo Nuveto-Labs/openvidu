@@ -131,7 +131,13 @@
 				(click)="toggleStreaming()"
 			>
 				<mat-icon>sensors</mat-icon>
-				<span *ngIf="streamingStatus === _streamingStatus.STOPPED || streamingStatus === _streamingStatus.STOPPING">
+				<span
+					*ngIf="
+						streamingStatus === _streamingStatus.STOPPED ||
+						streamingStatus === _streamingStatus.STOPPING ||
+						streamingStatus === _streamingStatus.FAILED
+					"
+				>
 					{{ 'PANEL.STREAMING.START' | translate }}
 				</span>
 				<span *ngIf="streamingStatus === _streamingStatus.STARTED || streamingStatus === _streamingStatus.STARTING">
