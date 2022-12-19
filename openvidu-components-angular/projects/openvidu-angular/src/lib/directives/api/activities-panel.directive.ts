@@ -1,5 +1,5 @@
 import { AfterViewInit, Directive, ElementRef, Input, OnDestroy } from '@angular/core';
-import { StreamingInfo, StreamingStatus } from '../../models/streaming.model';
+import { StreamingError, StreamingInfo, StreamingStatus } from '../../models/streaming.model';
 import { OpenViduAngularConfigService } from '../../services/config/openvidu-angular.config.service';
 
 /**
@@ -106,6 +106,7 @@ export class ActivitiesPanelStreamingActivityDirective implements AfterViewInit,
  * The **streamingError** directive allows to show any possible error with the streaming in the {@link ActivitiesPanelComponent}.
  *
  * Default: `undefined`
+ * Type: {@link StreamingError}
  *
  * It can be used in the parent element {@link VideoconferenceComponent} specifying the name of the `streamingActivity` component:
  *
@@ -121,16 +122,16 @@ export class ActivitiesPanelStreamingActivityDirective implements AfterViewInit,
 	selector: 'ov-videoconference[streamingActivityStreamingError], ov-activities-panel[streamingError]'
 })
 export class StreamingActivityStreamingErrorDirective implements AfterViewInit, OnDestroy {
-	@Input() set streamingActivityStreamingError(value: any) {
+	@Input() set streamingActivityStreamingError(value: StreamingError) {
 		this.streamingErrorValue = value;
 		this.update(this.streamingErrorValue);
 	}
-	@Input() set streamingError(value: any) {
+	@Input() set streamingError(value: StreamingError) {
 		this.streamingErrorValue = value;
 		this.update(this.streamingErrorValue);
 	}
 
-	streamingErrorValue: any = null;
+	streamingErrorValue: StreamingError | undefined = undefined;
 
 	constructor(public elementRef: ElementRef, private libService: OpenViduAngularConfigService) {}
 
@@ -141,11 +142,11 @@ export class StreamingActivityStreamingErrorDirective implements AfterViewInit, 
 		this.clear();
 	}
 	clear() {
-		this.streamingErrorValue = null;
-		this.update(null);
+		this.streamingErrorValue = undefined;
+		this.update(undefined);
 	}
 
-	update(value: any) {
+	update(value: StreamingError | undefined) {
 		if (this.libService.streamingError.getValue() !== value) {
 			this.libService.streamingError.next(value);
 		}
@@ -158,6 +159,7 @@ export class StreamingActivityStreamingErrorDirective implements AfterViewInit, 
  * The **streamingInfo** directive allows show the live streaming info in {@link ActivitiesPanelComponent}.
  *
  * Default: `undefined`
+ * Type: {@link StreamingInfo}
  *
  * It can be used in the parent element {@link VideoconferenceComponent} specifying the name of the `streamingActivity` component:
  *

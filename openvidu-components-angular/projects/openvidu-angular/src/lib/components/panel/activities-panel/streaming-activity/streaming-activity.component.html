@@ -88,7 +88,7 @@
 			<div *ngIf="isSessionCreator">
 				<p>{{ 'CONTENT_SUBTITLE' | translate }}</p>
 				<p *ngIf="urlRequiredError" class="error-text" id="required-url-error">{{ 'PANEL.STREAMING.REQUIRED_URL' | translate }}</p>
-				<p *ngIf="streamingError && isRtmpModuleAvailable" class="error-text" id="streaming-error">{{ streamingError | json }}</p>
+				<p *ngIf="streamingError" class="error-text" id="streaming-error">{{ streamingError.message }}</p>
 				<p
 					*ngIf="!isRtmpModuleAvailable"
 					class="error-text"

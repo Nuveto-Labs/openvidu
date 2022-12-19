@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 
 import { ActivatedRoute } from '@angular/router';
-import { PanelService, StreamingInfo, StreamingStatus } from 'openvidu-angular';
+import { PanelService, StreamingError, StreamingInfo, StreamingStatus } from 'openvidu-angular';
 import { Subscription, throwError as observableThrowError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -165,7 +165,7 @@ export class TestingComponent implements OnInit {
 	tokens: { webcam: any; screen: any };
 
 	subscription: Subscription;
-	streamingError: string;
+	streamingError: StreamingError | undefined;
 
 	recordingActivity = true;
 
@@ -309,7 +309,7 @@ export class TestingComponent implements OnInit {
 				break;
 
 			case AttributeDirective.ACTIVITIES_PANEL_STREAMING_ERROR:
-				this.streamingError = 'TEST_ERROR';
+				this.streamingError = {message: 'TEST_ERROR', rtmpAvailable: true};
 				break;
 			default:
 				break;

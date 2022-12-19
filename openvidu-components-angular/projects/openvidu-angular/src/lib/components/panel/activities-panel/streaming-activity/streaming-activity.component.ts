@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { Signal } from '../../../../models/signal.model';
-import { StreamingInfo, StreamingStatus } from '../../../../models/streaming.model';
+import { StreamingError, StreamingInfo, StreamingStatus } from '../../../../models/streaming.model';
 import { OpenViduAngularConfigService } from '../../../../services/config/openvidu-angular.config.service';
 import { OpenViduService } from '../../../../services/openvidu/openvidu.service';
 import { ParticipantService } from '../../../../services/participant/participant.service';
@@ -51,7 +51,7 @@ export class StreamingActivityComponent implements OnInit {
 	/**
 	 * @internal
 	 */
-	streamingError: string | undefined;
+	streamingError: StreamingError | undefined;
 
 	/**
 	 * @internal
@@ -116,9 +116,9 @@ export class StreamingActivityComponent implements OnInit {
 
 	startStreaming() {
 		if (!!this.rtmpUrl) {
+			this.isRtmpModuleAvailable = true;
 			this.streamingError = undefined;
 			this.streamingService.updateStatus(StreamingStatus.STARTING);
-
 			this.onStartStreamingClicked.emit(this.rtmpUrl);
 		}
 		this.urlRequiredError = !this.rtmpUrl;
@@ -157,13 +157,10 @@ export class StreamingActivityComponent implements OnInit {
 	}
 
 	private subscribeToStreamingError() {
-		this.streamingErrorSub = this.libService.streamingErrorObs.subscribe((error: any) => {
+		this.streamingErrorSub = this.libService.streamingErrorObs.subscribe((error: StreamingError | undefined) => {
 			if (!!error) {
-				if ('available' in error && !error.available) {
-					this.isRtmpModuleAvailable = false;
-				} else {
-					this.streamingError = error;
-				}
+				this.streamingError = error;
+				this.isRtmpModuleAvailable = error.rtmpAvailable;
 				this.streamingService.updateStatus(StreamingStatus.FAILED);
 				this.cd.markForCheck();
 			}

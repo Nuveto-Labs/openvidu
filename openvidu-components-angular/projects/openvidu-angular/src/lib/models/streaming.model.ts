@@ -11,3 +11,10 @@ export interface StreamingInfo {
 	id: string,
 	status: StreamingStatus
 }
+
+
+export interface StreamingError {
+	message: string,
+	// If streaming service is available or not
+	rtmpAvailable: boolean
+}

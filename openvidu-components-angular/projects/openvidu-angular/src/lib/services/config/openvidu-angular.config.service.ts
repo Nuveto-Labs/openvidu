@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { OpenViduAngularConfig, ParticipantFactoryFunction } from '../../config/openvidu-angular.config';
 import { RecordingInfo } from '../../models/recording.model';
-import { StreamingInfo } from '../../models/streaming.model';
+import { StreamingError, StreamingInfo } from '../../models/streaming.model';
 
 // import { version } from '../../../../package.json';
 
@@ -74,8 +74,8 @@ export class OpenViduAngularConfigService {
 	streamingActivityObs: Observable<boolean>;
 	recordingError = <BehaviorSubject<any>>new BehaviorSubject(null);
 	recordingErrorObs: Observable<any>;
-	streamingErrorObs: Observable<any>;
-	streamingError = <BehaviorSubject<any>>new BehaviorSubject(null);
+	streamingErrorObs: Observable<StreamingError | undefined>;
+	streamingError = <BehaviorSubject<StreamingError | undefined>>new BehaviorSubject(undefined);
 	streamingInfo = <BehaviorSubject<StreamingInfo | undefined>>new BehaviorSubject(undefined);
 
 	//TODO: Remove this directive when RTMP Exported was included on OV and streaming ready event was fired.
