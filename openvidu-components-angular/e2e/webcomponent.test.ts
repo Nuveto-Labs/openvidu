@@ -602,7 +602,7 @@ describe('Testing API Directives', () => {
 		await utils.clickOn('ov-streaming-activity');
 
 		element = await utils.waitForElement('#streaming-error');
-		expect(await element.getAttribute('innerText')).equal('"TEST_ERROR"');
+		expect(await element.getAttribute('innerText')).equal('TEST_ERROR');
 	});
 
 	it('should HIDE the STREAMING ACTIVITY in activities panel', async () => {
@@ -858,9 +858,6 @@ describe('Testing videoconference EVENTS', () => {
 		await input.sendKeys('RTMPurl');
 		await utils.clickOn('#streaming-btn');
 
-		console.log('starting streaming');
-
-
 		// Open more options menu
 		await utils.waitForElement('#more-options-btn');
 		expect(await utils.isPresent('#more-options-btn')).to.be.true;
@@ -968,11 +965,9 @@ describe('Testing videoconference EVENTS', () => {
 
 
 		const input = await utils.waitForElement('#rtmp-url-input');
-		console.log('key');
 		await input.sendKeys('RTMPurl');
 
 		await utils.clickOn('#streaming-btn');
-		console.log('AASDFSFDF');
 
 		// Checking if onActivitiesPanelStartStreamingClicked has been received
 		await utils.waitForElement('#onActivitiesPanelStartStreamingClicked');

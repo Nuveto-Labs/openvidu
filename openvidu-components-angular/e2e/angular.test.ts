@@ -1098,7 +1098,7 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 		await utils.clickOn('#streaming-activity');
 		await browser.sleep(500);
 		const error = await utils.waitForElement('#streaming-error');
-		expect(await error.getAttribute('innerText')).equals('"TEST_ERROR"');
+		expect(await error.getAttribute('innerText')).equals('TEST_ERROR');
 
 	});
 });

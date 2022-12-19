@@ -239,7 +239,7 @@ async function joinSession(sessionName, participantName) {
 	webComponent.activitiesPanelStreamingActivity = ACTIVITIES_STREAMING_ACTIVITY;
 	webComponent.recordingActivityRecordingError = RECORDING_ERROR;
 
-	webComponent.streamingActivityStreamingError = STREAMING_ERROR;
+	webComponent.streamingActivityStreamingError = {message: STREAMING_ERROR, rtmpAvailable: true};
 
 	webComponent.participantName = participantName;
 	webComponent.tokens = tokens;
