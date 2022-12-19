@@ -59,6 +59,7 @@
 		"CLOSE": "閉じる",
 		"PRO_FEATURE": "この機能はOpenVidu PROの機能です",
 		"SEE_MORE": "もっと見る",
+		"PAID_FEATURE": "この機能は、OpenVidu 商用サービスの一部です。詳細については、commercial@openvidu.io までお問い合わせください。",
 		"CHAT": {
 			"TITLE": "チャット",
 			"YOU": "あなた",

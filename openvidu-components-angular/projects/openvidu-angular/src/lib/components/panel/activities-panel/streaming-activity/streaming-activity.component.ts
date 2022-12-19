@@ -62,10 +62,11 @@ export class StreamingActivityComponent implements OnInit {
 	 */
 	streamingStatusEnum = StreamingStatus;
 	opened: boolean = false;
+	isSessionCreator: boolean = false;
+	isRtmpModuleAvailable: boolean = true;
 	private streamingSub: Subscription;
 	private streamingInfoSub: Subscription;
 	private streamingErrorSub: Subscription;
-	isSessionCreator: boolean = false;
 
 	constructor(
 		private streamingService: StreamingService,
@@ -156,9 +157,13 @@ export class StreamingActivityComponent implements OnInit {
 	}
 
 	private subscribeToStreamingError() {
-		this.streamingErrorSub = this.libService.streamingErrorObs.subscribe((error: string | undefined) => {
+		this.streamingErrorSub = this.libService.streamingErrorObs.subscribe((error: any) => {
 			if (!!error) {
-				this.streamingError = error;
+				if ('available' in error && !error.available) {
+					this.isRtmpModuleAvailable = false;
+				} else {
+					this.streamingError = error;
+				}
 				this.streamingService.updateStatus(StreamingStatus.FAILED);
 				this.cd.markForCheck();
 			}

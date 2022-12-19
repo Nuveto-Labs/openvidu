@@ -59,7 +59,7 @@
 			>
 				<input
 					placeholder="{{ 'PANEL.STREAMING.URL' | translate }}"
-					[disabled]="streamingStatus !== streamingStatusEnum.STOPPED && streamingStatus !== streamingStatusEnum.FAILED"
+					[disabled]="!isRtmpModuleAvailable || streamingStatus !== streamingStatusEnum.STOPPED && streamingStatus !== streamingStatusEnum.FAILED"
 					autocomplete="off"
 					(keypress)="eventKeyPress($event)"
 					[(ngModel)]="rtmpUrl"
@@ -69,7 +69,7 @@
 					mat-icon-button
 					*ngIf="streamingStatus !== streamingStatusEnum.STARTED"
 					id="streaming-btn"
-					[disabled]="!rtmpUrl || streamingStatus === streamingStatusEnum.STARTING"
+					[disabled]="!rtmpUrl || streamingStatus === streamingStatusEnum.STARTING || streamingStatus === streamingStatusEnum.STOPPING"
 					(click)="startStreaming()"
 				>
 					<mat-icon matTooltip="{{ 'PANEL.STREAMING.START' | translate }}">play_circle</mat-icon>
@@ -85,10 +85,16 @@
 				</button>
 			</div>
 
-			<div *ngIf="isSessionCreator" >
+			<div *ngIf="isSessionCreator">
 				<p>{{ 'CONTENT_SUBTITLE' | translate }}</p>
 				<p *ngIf="urlRequiredError" class="error-text" id="required-url-error">{{ 'PANEL.STREAMING.REQUIRED_URL' | translate }}</p>
-				<p *ngIf="streamingError" class="error-text" id="streaming-error">{{ streamingError | json }}</p>
+				<p *ngIf="streamingError && isRtmpModuleAvailable" class="error-text" id="streaming-error">{{ streamingError | json }}</p>
+				<p
+					*ngIf="!isRtmpModuleAvailable"
+					class="error-text"
+					id="streaming-error"
+					[innerHTML]="'PANEL.PAID_FEATURE' | translate | linkify"
+				></p>
 			</div>
 
 			<!-- Message for no Moderators-->

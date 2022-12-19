@@ -59,6 +59,7 @@
 		"CLOSE": "Close",
 		"SEE_MORE": "See more",
 		"PRO_FEATURE": "This feature is part of OpenVidu PRO tier",
+		"PAID_FEATURE": "This feature is part of OpenVidu commercial service. Please contact us through commercial@openvidu.io for more information.",
 		"CHAT": {
 			"TITLE": "Chat",
 			"YOU": "You",

@@ -59,6 +59,7 @@
 		"CLOSE": "关闭",
 		"SEE_MORE": "查看更多",
 		"PRO_FEATURE": "此功能属于OpenVidu PRO级别",
+		"PAID_FEATURE": "此功能是 OpenVidu 商业服务的一部分。请通过 commercial@openvidu.io 联系我们了解更多信息。",
 		"CHAT": {
 			"TITLE": "聊天",
 			"YOU": "你",
