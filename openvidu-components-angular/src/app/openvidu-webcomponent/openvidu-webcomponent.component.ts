@@ -1,5 +1,5 @@
-import { Component, ElementRef, Input, OnInit, Output, EventEmitter } from '@angular/core';
-import { OpenViduService, TokenModel, ParticipantAbstractModel, RecordingInfo } from 'openvidu-angular';
+import { Component, ElementRef, Input, OnInit, Output, EventEmitter, HostListener } from '@angular/core';
+import { OpenViduService, TokenModel, ParticipantAbstractModel, RecordingInfo, Signal } from 'openvidu-angular';
 import { Session } from 'openvidu-browser';
 
 /**
@@ -11,6 +11,121 @@ import { Session } from 'openvidu-browser';
 	templateUrl: './openvidu-webcomponent.component.html'
 })
 export class OpenviduWebComponentComponent implements OnInit {
+	messages: object[] = [];
+	send(): void {
+		// @ts-ignore
+		var evt = new CustomEvent("SigmaChatSend", {detail: new FormData(document.getElementById('sigma-form'))}); 
+		window.dispatchEvent(evt);
+	}
+
+	getImage(file) {
+		let image = file
+      let ext = image.split(".").pop();
+	  let url = file.substr(0,file.indexOf('/', 10));
+      switch (ext) {
+        case 'pdf':
+          image = `${url}/dist/img/imagem_pdf.png`;
+          break;
+        case 'txt':
+          image = `${url}/dist/img/image_txt.png`;
+          break;
+        case 'docx':
+          image = `${url}/dist/img/word.png`;
+          break;
+        case 'xlsx':
+          image = `${url}/dist/img/excel.png`;
+          break;
+        case 'csv':
+          image = `${url}/dist/img/excel.png`;
+          break;
+        default:
+          image = file;
+      }
+	  return image;
+	}
+
+	changed() {
+		// @ts-ignore
+		var el = document.querySelector("#sigma-file-msg").files[0].name;
+		var input = document.querySelector("#sigma-input-msg");
+
+		var iconAttachment = document.querySelector(".sigma-label-attachment");
+
+		if (el != '') {
+			// @ts-ignore
+			input.style.marginLeft = '1.5rem';
+			// @ts-ignore
+			input.setAttribute("readOnly", "true");
+			// @ts-ignore
+			input.value = el;
+
+			// @ts-ignore
+			document.querySelector("#sigma-file-msg").style.display = "none";
+
+			// @ts-ignore
+			iconAttachment.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-file-excel" viewBox="0 0 16 16">
+			<title>Cancelar Envio</title>
+			<path d="M5.18 4.616a.5.5 0 0 1 .704.064L8 7.219l2.116-2.54a.5.5 0 1 1 .768.641L8.651 8l2.233 2.68a.5.5 0 0 1-.768.64L8 8.781l-2.116 2.54a.5.5 0 0 1-.768-.641L7.349 8 5.116 5.32a.5.5 0 0 1 .064-.704z"/>
+			<path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H4zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+			</svg>`;
+
+			// @ts-ignore
+			iconAttachment.style.display = "block";
+
+			var deleteAttachment = document.querySelector(".bi-file-excel");
+			// @ts-ignore
+			deleteAttachment.addEventListener("click", function(e) {
+
+			var getInput = document.querySelector("#sigma-input-msg");
+			// @ts-ignore
+			getInput.removeAttribute("readOnly");
+			// @ts-ignore
+			getInput.style.marginLeft = '0.5rem'
+			// @ts-ignore
+			input.value = '';
+
+			var teste = document.querySelector(".sigma-input")
+			// @ts-ignore
+			teste.value = ''
+
+			// @ts-ignore
+			iconAttachment.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-paperclip" viewBox="0 0 16 16">
+			<path d="M4.5 3a2.5 2.5 0 0 1 5 0v9a1.5 1.5 0 0 1-3 0V5a.5.5 0 0 1 1 0v7a.5.5 0 0 0 1 0V3a1.5 1.5 0 1 0-3 0v9a2.5 2.5 0 0 0 5 0V5a.5.5 0 0 1 1 0v7a3.5 3.5 0 1 1-7 0V3z"/>
+			</svg>`;
+
+
+			// @ts-ignore
+			document.querySelector("#sigma-file-msg").style.display = "block";
+			// @ts-ignore
+			iconAttachment.style.marginRight = "0";
+			// @ts-ignore
+			input.style.margiLeft = '.5rem';
+			})
+		}
+	}
+
+	@HostListener('window:SigmaChatNewMessage', ['$event'])
+	handleNewMessage(event) {
+		if(event.detail.system){
+			const data = {
+				message: event.detail.message ?? 'file',
+				nickname: event.detail.name ?? 'agent'
+			};
+			this.openviduService.sendSignal(Signal.CHAT, undefined, data);
+		}
+		this.messages.push(event.detail);
+
+		const messages = document.querySelector('.sigma-messages');
+		if(messages){
+      		messages.scrollTop = messages.scrollHeight;
+		}
+	}
+	@HostListener('window:SigmaChatClear', ['$event'])
+	handleClear(event) {
+		this.messages = [];
+	}
+
+
 	/**
 	 * @internal
 	 */
