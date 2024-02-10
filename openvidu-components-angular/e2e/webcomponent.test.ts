@@ -1,9 +1,10 @@
 import { expect } from 'chai';
-import { Builder, By, WebDriver } from 'selenium-webdriver';
+import { Builder, Key, WebDriver } from 'selenium-webdriver';
+import { OPENVIDU_SECRET, OPENVIDU_SERVER_URL } from './config';
 import { getBrowserOptionsWithoutDevices, WebComponentConfig } from './selenium.conf';
 import { OpenViduComponentsPO } from './utils.po.test';
 
-const url = WebComponentConfig.appUrl;
+const url = `${WebComponentConfig.appUrl}?OV_URL=${OPENVIDU_SERVER_URL}&OV_SECRET=${OPENVIDU_SECRET}`;
 
 describe('Testing API Directives', () => {
 	let browser: WebDriver;
@@ -28,7 +29,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should join with ONLY ONE TOKEN', async () => {
-		await browser.get(`${url}?singleToken=true`);
+		await browser.get(`${url}&singleToken=true`);
 
 		// Checking if prejoin page exist
 		await utils.checkPrejoinIsPresent();
@@ -46,7 +47,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should set the MINIMAL UI', async () => {
-		await browser.get(`${url}?minimal=true`);
+		await browser.get(`${url}&minimal=true`);
 		// Checking if prejoin page exist
 		await utils.checkPrejoinIsPresent();
 
@@ -87,8 +88,7 @@ describe('Testing API Directives', () => {
 		expect(await utils.isPresent('#session-name')).to.be.false;
 
 		// Checking if nickname is not displayed
-		await browser.findElements(By.id('nickname-container'));
-		expect(await utils.isPresent('#nickname-container')).to.be.false;
+		expect(await utils.getNumberOfElements('#nickname-container')).equals(0);
 
 		// Checking if audio detection is not displayed
 		expect(await utils.isPresent('#audio-wave-container')).to.be.false;
@@ -97,53 +97,120 @@ describe('Testing API Directives', () => {
 		expect(await utils.isPresent('#settings-container')).to.be.false;
 	});
 
+	it('should change the UI LANG ', async () => {
+		await browser.get(`${url}&lang=es`);
+
+		await utils.checkPrejoinIsPresent();
+
+		let element = await utils.waitForElement('.lang-button');
+		expect(await element.getText()).equal('Españolexpand_more');
+
+		element = await utils.waitForElement('#join-button');
+		expect(await element.getText()).equal('Unirme ahora');
+	});
+
+	it('should override the LANG OPTIONS', async () => {
+		await browser.get(`${url}&prejoin=true&langOptions=true`);
+
+
+		await utils.checkPrejoinIsPresent();
+		await utils.waitForElement('.lang-button');
+		await utils.clickOn('.lang-button');
+		await browser.sleep(500);
+		expect(await utils.getNumberOfElements('.lang-menu-opt')).equals(2);
+
+		await utils.clickOn('.lang-menu-opt');
+		await browser.sleep(500);
+
+		await utils.clickOn('#join-button');
+
+		await utils.checkSessionIsPresent();
+
+		// Checking if toolbar is present
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+
+		await browser.sleep(500);
+
+		// Checking if button panel is present
+		await utils.waitForElement('.mat-menu-content');
+		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+		// Checking if captions button is present
+		await utils.waitForElement('#toolbar-settings-btn');
+		expect(await utils.isPresent('#toolbar-settings-btn')).to.be.true;
+		await utils.clickOn('#toolbar-settings-btn');
+
+		await browser.sleep(500);
+
+		await utils.waitForElement('#settings-container');
+		await utils.waitForElement('.lang-button');
+		await utils.clickOn('.lang-button');
+
+		await browser.sleep(500);
+
+		expect(await utils.getNumberOfElements('.lang-menu-opt')).equals(2);
+
+	});
+
 	it('should show the PREJOIN page', async () => {
-		await browser.get(`${url}?prejoin=true`);
+		await browser.get(`${url}&prejoin=true`);
 
 		await utils.checkPrejoinIsPresent();
 	});
 
 	it('should not show the PREJOIN page', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 	});
 
 	it('should run the app with VIDEO MUTED in prejoin page', async () => {
-		let idVideoEnabled;
-		const script = 'return document.getElementsByTagName("video")[0].srcObject.getVideoTracks()[0].enabled;';
+		try {
+			let idVideoEnabled;
+			const script = 'return document.getElementsByTagName("video")[0].srcObject.getVideoTracks()[0].enabled;';
 
-		await browser.get(`${url}?prejoin=true&videoMuted=true`);
+			await browser.get(`${url}&prejoin=true&videoMuted=true`);
 
-		await utils.checkPrejoinIsPresent();
+			await utils.checkPrejoinIsPresent();
 
-		// Checking if video is displayed
-		await utils.checkVideoElementIsPresent();
+			// Checking if video is displayed
+			await utils.checkVideoElementIsPresent();
 
-		// Checking if video track is disabled/muted
-		idVideoEnabled = await browser.executeScript<boolean>(script);
-		expect(idVideoEnabled).to.be.false;
+			// Checking if virtual background button is disabled
+			const button = await utils.waitForElement('#background-effects-btn');
+			expect(await button.isEnabled()).to.be.false;
 
-		await utils.waitForElement('#videocam_off');
+			// Checking if video track is disabled/muted
+			idVideoEnabled = await browser.executeScript<boolean>(script);
+			expect(idVideoEnabled).to.be.false;
 
-		const joinButton = await utils.waitForElement('#join-button');
-		await joinButton.click();
+			await utils.waitForElement('#videocam_off');
+			await utils.clickOn('#join-button');
 
-		// Checking if video is muted after join the room
-		await utils.checkSessionIsPresent();
+			// Checking if video is muted after join the room
+			await utils.checkSessionIsPresent();
 
-		idVideoEnabled = await browser.executeScript<boolean>(script);
-		expect(idVideoEnabled).to.be.false;
+			idVideoEnabled = await browser.executeScript<boolean>(script);
+			expect(idVideoEnabled).to.be.false;
 
-		await utils.waitForElement('#videocam_off');
-		expect(await utils.isPresent('#videocam_off')).to.be.true;
+			await utils.waitForElement('#videocam_off');
+			expect(await utils.isPresent('#videocam_off')).to.be.true;
+		} catch (error) {
+			console.log(error);
+			console.log(await browser.takeScreenshot());
+		}
 	});
 
 	it('should run the app with VIDEO MUTED and WITHOUT PREJOIN page', async () => {
 		let isVideoEnabled;
 		const videoEnableScript = 'return document.getElementsByTagName("video")[0].srcObject.getVideoTracks()[0].enabled;';
 
-		await browser.get(`${url}?prejoin=false&videoMuted=true`);
+		await browser.get(`${url}&prejoin=false&videoMuted=true`);
+
+		await browser.sleep(2000);
 
 		await utils.checkSessionIsPresent();
 
@@ -164,7 +231,7 @@ describe('Testing API Directives', () => {
 		let isAudioEnabled;
 		const script = 'return document.getElementsByTagName("video")[0].srcObject.getAudioTracks()[0].enabled;';
 
-		await browser.get(`${url}?audioMuted=true`);
+		await browser.get(`${url}&audioMuted=true`);
 
 		await utils.checkPrejoinIsPresent();
 
@@ -193,7 +260,7 @@ describe('Testing API Directives', () => {
 		let isAudioEnabled;
 		const audioEnableScript = 'return document.getElementsByTagName("video")[0].srcObject.getAudioTracks()[0].enabled;';
 
-		await browser.get(`${url}?prejoin=false&audioMuted=true`);
+		await browser.get(`${url}&prejoin=false&audioMuted=true`);
 
 		await utils.checkSessionIsPresent();
 
@@ -209,7 +276,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the SCREENSHARE button', async () => {
-		await browser.get(`${url}?prejoin=false&screenshareBtn=false`);
+		await browser.get(`${url}&prejoin=false&screenshareBtn=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -221,7 +288,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the FULLSCREEN button', async () => {
-		await browser.get(`${url}?prejoin=false&fullscreenBtn=false`);
+		await browser.get(`${url}&prejoin=false&fullscreenBtn=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -236,13 +303,12 @@ describe('Testing API Directives', () => {
 		// Checking if fullscreen button is not present
 		await utils.waitForElement('.mat-menu-content');
 		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+		expect(await utils.getNumberOfElements('#fullscreen-btn')).equals(0);
 
-		await browser.findElements(By.id('fullscreen-btn'));
-		expect(await utils.isPresent('#fullscreen-btn')).to.be.false;
 	});
 
 	it('should HIDE the CAPTIONS button', async () => {
-		await browser.get(`${url}?prejoin=false&toolbarCaptionsBtn=false`);
+		await browser.get(`${url}&prejoin=false&toolbarCaptionsBtn=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -271,8 +337,50 @@ describe('Testing API Directives', () => {
 		expect(await utils.isPresent('#captions-opt')).to.be.false;
 	});
 
+	it('should HIDE the TOOLBAR RECORDING button', async () => {
+		await browser.get(`${url}&prejoin=false&toolbarRecordingButton=false`);
+
+		await utils.checkSessionIsPresent();
+
+		// Checking if toolbar is present
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+
+		await browser.sleep(500);
+
+		// Checking if button panel is present
+		await utils.waitForElement('.mat-menu-content');
+		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+		// Checking if recording button is not present
+		expect(await utils.isPresent('#recording-btn')).to.be.false;
+	});
+
+	it('should HIDE the TOOLBAR BROADCASTING button', async () => {
+		await browser.get(`${url}&prejoin=false&toolbarBroadcastingButton=false`);
+
+		await utils.checkSessionIsPresent();
+
+		// Checking if toolbar is present
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+
+		await browser.sleep(500);
+
+		// Checking if button panel is present
+		await utils.waitForElement('.mat-menu-content');
+		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+		// Checking if broadcasting button is not present
+		expect(await utils.isPresent('#broadcasting-btn')).to.be.false;
+	});
+
 	it('should HIDE the TOOLBAR SETTINGS button', async () => {
-		await browser.get(`${url}?prejoin=false&toolbarSettingsBtn=false`);
+		await browser.get(`${url}&prejoin=false&toolbarSettingsBtn=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -292,7 +400,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the LEAVE button', async () => {
-		await browser.get(`${url}?prejoin=false&leaveBtn=false`);
+		await browser.get(`${url}&prejoin=false&leaveBtn=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -300,12 +408,11 @@ describe('Testing API Directives', () => {
 		await utils.checkToolbarIsPresent();
 
 		// Checking if leave button is not present
-		await browser.findElements(By.id('leave-btn'));
-		expect(await utils.isPresent('#leave-btn')).to.be.false;
+		expect(await utils.getNumberOfElements('#leave-btn')).equals(0);
 	});
 
 	it('should HIDE the ACTIVITIES PANEL button', async () => {
-		await browser.get(`${url}?prejoin=false&activitiesPanelBtn=false`);
+		await browser.get(`${url}&prejoin=false&activitiesPanelBtn=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -317,7 +424,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the CHAT PANEL button', async () => {
-		await browser.get(`${url}?prejoin=false&chatPanelBtn=false`);
+		await browser.get(`${url}&prejoin=false&chatPanelBtn=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -329,7 +436,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the PARTICIPANTS PANEL button', async () => {
-		await browser.get(`${url}?prejoin=false&participantsPanelBtn=false`);
+		await browser.get(`${url}&prejoin=false&participantsPanelBtn=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -341,7 +448,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the LOGO', async () => {
-		await browser.get(`${url}?prejoin=false&displayLogo=false`);
+		await browser.get(`${url}&prejoin=false&displayLogo=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -357,7 +464,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the SESSION NAME', async () => {
-		await browser.get(`${url}?prejoin=false&displaySessionName=false`);
+		await browser.get(`${url}&prejoin=false&displaySessionName=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -373,7 +480,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the PARTICIPANT NAME', async () => {
-		await browser.get(`${url}?prejoin=false&displayParticipantName=false`);
+		await browser.get(`${url}&prejoin=false&displayParticipantName=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -388,7 +495,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the AUDIO DETECTION element', async () => {
-		await browser.get(`${url}?prejoin=false&displayAudioDetection=false`);
+		await browser.get(`${url}&prejoin=false&displayAudioDetection=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -403,7 +510,7 @@ describe('Testing API Directives', () => {
 	});
 
 	it('should HIDE the STREAM SETTINGS button', async () => {
-		await browser.get(`${url}?prejoin=false&settingsBtn=false`);
+		await browser.get(`${url}&prejoin=false&settingsBtn=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -419,7 +526,7 @@ describe('Testing API Directives', () => {
 
 	it('should HIDE the MUTE button in participants panel', async () => {
 		const sessionName = 'e2etest';
-		const fixedUrl = `${url}?prejoin=false&participantMuteBtn=false&sessionName=${sessionName}`;
+		const fixedUrl = `${url}&prejoin=false&participantMuteBtn=false&sessionName=${sessionName}`;
 		await browser.get(fixedUrl);
 
 		await utils.checkSessionIsPresent();
@@ -454,7 +561,7 @@ describe('Testing API Directives', () => {
 
 	it('should HIDE the RECORDING ACTIVITY in activities panel', async () => {
 		let element;
-		const fixedUrl = `${url}?prejoin=false&activitiesPanelRecordingActivity=false`;
+		const fixedUrl = `${url}&prejoin=false&activitiesPanelRecordingActivity=false`;
 		await browser.get(fixedUrl);
 
 		await utils.checkSessionIsPresent();
@@ -478,7 +585,7 @@ describe('Testing API Directives', () => {
 
 	it('should SHOW a RECORDING ERROR in activities panel', async () => {
 		let element;
-		const fixedUrl = `${url}?prejoin=false&recordingError=TEST_ERROR`;
+		const fixedUrl = `${url}&prejoin=false&recordingError=TEST_ERROR`;
 		await browser.get(fixedUrl);
 
 		await utils.checkSessionIsPresent();
@@ -512,6 +619,63 @@ describe('Testing API Directives', () => {
 		expect(await element.getAttribute('innerText')).equal('"TEST_ERROR"');
 		expect(await utils.isPresent('.recording-error')).to.be.true;
 	});
+
+	it('should SHOW a BROADCASTING ERROR in activities panel', async () => {
+		let element;
+		const fixedUrl = `${url}&prejoin=false&broadcastingError=TEST_ERROR`;
+		await browser.get(fixedUrl);
+
+		await utils.checkSessionIsPresent();
+
+		// Checking if toolbar is present
+		await utils.checkToolbarIsPresent();
+
+		element = await utils.waitForElement('#activities-panel-btn');
+		await element.click();
+
+		// Checking if participatns panel is displayed
+		await utils.waitForElement('#default-activities-panel');
+		expect(await utils.isPresent('#default-activities-panel')).to.be.true;
+
+		// Checking if broadcasting activity exists
+		await utils.waitForElement('#activities-container');
+		await utils.waitForElement('.activities-body-container');
+
+		await utils.waitForElement('ov-broadcasting-activity');
+		expect(await utils.isPresent('ov-broadcasting-activity')).to.be.true;
+
+		const status = await utils.waitForElement('#broadcasting-status');
+		expect(await status.getAttribute('innerText')).equals('FAILED');
+
+		// Open broadcasting
+		await browser.sleep(1000);
+		await utils.clickOn('ov-broadcasting-activity');
+
+		element = await utils.waitForElement('#broadcasting-error');
+		expect(await element.getAttribute('innerText')).equal('TEST_ERROR');
+	});
+
+	it('should HIDE the BROADCASTING ACTIVITY in activities panel', async () => {
+		await browser.get(`${url}&prejoin=false&activitiesPanelBroadcastingActivity=false`);
+
+		await utils.checkSessionIsPresent();
+
+		// Checking if toolbar is present
+		await utils.checkToolbarIsPresent();
+
+		await utils.waitForElement('#activities-panel-btn');
+		await utils.clickOn('#activities-panel-btn');
+
+		// Checking if participatns panel is displayed
+		await utils.waitForElement('#default-activities-panel');
+		expect(await utils.isPresent('#default-activities-panel')).to.be.true;
+
+		// await browser.sleep(1000);
+
+		// Checking if recording activity exists
+		await utils.waitForElement('.activities-body-container');
+		expect(await utils.isPresent('ov-broadcasting-activity')).to.be.false;
+	});
 });
 
 describe('Testing videoconference EVENTS', () => {
@@ -542,10 +706,8 @@ describe('Testing videoconference EVENTS', () => {
 		expect(await utils.isPresent('#prejoin-container')).to.be.true;
 
 		// Clicking to join button
-		const joinButton = await utils.waitForElement('#join-button');
-		expect(await utils.isPresent('#join-button')).to.be.true;
-		expect(await joinButton.isEnabled()).to.be.true;
-		await joinButton.click();
+		await utils.waitForElement('#join-button');
+		await utils.clickOn('#join-button');
 
 		// Checking if onJoinButtonClicked has been received
 		await utils.waitForElement('#onJoinButtonClicked');
@@ -553,7 +715,7 @@ describe('Testing videoconference EVENTS', () => {
 	});
 
 	it('should receive the onToolbarLeaveButtonClicked event', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -570,7 +732,7 @@ describe('Testing videoconference EVENTS', () => {
 	});
 
 	it('should receive the onToolbarCameraButtonClicked event', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -587,7 +749,7 @@ describe('Testing videoconference EVENTS', () => {
 	});
 
 	it('should receive the onToolbarMicrophoneButtonClicked event', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -604,7 +766,7 @@ describe('Testing videoconference EVENTS', () => {
 	});
 
 	it('should receive the onToolbarScreenshareButtonClicked event', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -622,7 +784,7 @@ describe('Testing videoconference EVENTS', () => {
 
 	it('should receive the onToolbarFullscreenButtonClicked event', async () => {
 		let element;
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -646,7 +808,7 @@ describe('Testing videoconference EVENTS', () => {
 	});
 
 	it('should receive the onToolbarChatPanelButtonClicked event', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -662,7 +824,7 @@ describe('Testing videoconference EVENTS', () => {
 	});
 
 	it('should receive the onToolbarParticipantsPanelButtonClicked event', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -678,7 +840,7 @@ describe('Testing videoconference EVENTS', () => {
 	});
 
 	it('should receive the onToolbarActivitiesPanelButtonClicked event', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -694,35 +856,79 @@ describe('Testing videoconference EVENTS', () => {
 	});
 
 	it('should receive the onToolbarStartRecordingClicked event', async () => {
-		let element;
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
-
 		await utils.checkToolbarIsPresent();
 
 		// Open more options menu
-		element = await utils.waitForElement('#more-options-btn');
+		await utils.waitForElement('#more-options-btn');
 		expect(await utils.isPresent('#more-options-btn')).to.be.true;
-		await element.click();
+		await utils.clickOn('#more-options-btn');
 
 		await browser.sleep(500);
 
 		// Clicking to recording button
 		await utils.waitForElement('.mat-menu-content');
 
-		const recordingButton = await utils.waitForElement('#recording-btn');
+		await utils.waitForElement('#recording-btn');
 		expect(await utils.isPresent('#recording-btn')).to.be.true;
-		await recordingButton.click();
+		await utils.clickOn('#recording-btn');
 
 		// Checking if onToolbarStartRecordingClicked has been received
 		await utils.waitForElement('#onToolbarStartRecordingClicked');
 		expect(await utils.isPresent('#onToolbarStartRecordingClicked')).to.be.true;
 	});
 
+	// TODO: it needs an OpenVidu PRO
+	// it('should receive the onToolbarStopBroadcastingClicked event', async () => {
+	// 	await browser.get(`${url}&prejoin=false`);
+
+	// 	await utils.checkSessionIsPresent();
+	// 	await utils.checkToolbarIsPresent();
+
+	// 	// Open more options menu
+	// 	await utils.waitForElement('#more-options-btn');
+	// 	expect(await utils.isPresent('#more-options-btn')).to.be.true;
+	// 	await utils.clickOn('#more-options-btn');
+
+	// 	await browser.sleep(500);
+
+	// 	await utils.waitForElement('.mat-menu-content');
+
+	// 	await utils.waitForElement('#broadcasting-btn');
+	// 	await utils.clickOn('#broadcasting-btn');
+
+	// 	await browser.sleep(500);
+
+	// 	await utils.waitForElement('.sidenav-menu');
+	// 	await utils.waitForElement('#activities-container');
+
+	// 	await utils.waitForElement('#broadcasting-url-input');
+	// 	const input = await utils.waitForElement('#broadcast-url-input');
+	// 	await input.sendKeys('BroadcastUrl');
+	// 	await utils.clickOn('#broadcasting-btn');
+
+	// 	// Open more options menu
+	// 	await utils.waitForElement('#more-options-btn');
+	// 	expect(await utils.isPresent('#more-options-btn')).to.be.true;
+	// 	await utils.clickOn('#more-options-btn');
+
+	// 	await browser.sleep(500);
+
+	// 	await utils.waitForElement('.mat-menu-content');
+
+	// 	await utils.waitForElement('#broadcasting-btn');
+	// 	await utils.clickOn('#broadcasting-btn');
+
+	// 	// Checking if onToolbarStopBroadcastingClicked has been received
+	// 	await utils.waitForElement('#onToolbarStopBroadcastingClicked');
+	// 	expect(await utils.isPresent('#onToolbarStopBroadcastingClicked')).to.be.true;
+	// });
+
 	it('should receive the onActivitiesPanelStartRecordingClicked event', async () => {
 		let element;
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -754,7 +960,7 @@ describe('Testing videoconference EVENTS', () => {
 
 	it('should receive the PLAY and DELETE recording events', async () => {
 		let element;
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -785,8 +991,52 @@ describe('Testing videoconference EVENTS', () => {
 		expect(await utils.isPresent('#onActivitiesPanelDeleteRecordingClicked')).to.be.true;
 	});
 
+	it('should receive the onActivitiesPanelStartBroadcasting event', async () => {
+		await browser.get(`${url}&prejoin=false`);
+
+		await utils.checkSessionIsPresent();
+		await utils.checkToolbarIsPresent();
+
+		// Get activities button and click into it
+		await utils.waitForElement('#activities-panel-btn');
+		await utils.clickOn('#activities-panel-btn');
+		await browser.sleep(500);
+
+		await utils.waitForElement('.sidenav-menu');
+		await utils.waitForElement('#activities-container');
+		expect(await utils.isPresent('#activities-container')).to.be.true;
+
+		await utils.waitForElement('#broadcasting-activity');
+		await utils.clickOn('#broadcasting-activity');
+
+		await browser.sleep(1000);
+
+		const button = await utils.waitForElement('#broadcasting-btn');
+		expect(await button.isEnabled()).to.be.false;
+
+		const input = await utils.waitForElement('#broadcast-url-input');
+		await input.sendKeys('BroadcastUrl');
+
+		await utils.clickOn('#broadcasting-btn');
+
+		// Checking if onActivitiesPanelStartBroadcastingClicked has been received
+		await utils.waitForElement('#onActivitiesPanelStartBroadcastingClicked');
+		expect(await utils.isPresent('#onActivitiesPanelStartBroadcastingClicked')).to.be.true;
+
+		// TODO: it needs an OpenVidu PRO (onActivitiesPanelStopBroadcastingClicked event)
+
+		// expect(await utils.isPresent('#broadcasting-tag')).to.be.true;
+
+		// await utils.clickOn('#stop-broadcasting-btn');
+
+		// // Checking if onActivitiesPanelStopBroadcastingClicked has been received
+		// await utils.waitForElement('#onActivitiesPanelStopBroadcastingClicked');
+		// expect(await utils.isPresent('#onActivitiesPanelStopBroadcastingClicked')).to.be.true;
+		// expect(await utils.isPresent('#broadcasting-tag')).to.be.false;
+	});
+
 	it('should receive the onSessionCreated event', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -802,7 +1052,7 @@ describe('Testing videoconference EVENTS', () => {
 
 	it('should receive onParticipantCreated event from LOCAL participant', async () => {
 		const participantName = 'TEST_USER';
-		await browser.get(`${url}?participantName=${participantName}`);
+		await browser.get(`${url}&participantName=${participantName}`);
 		await utils.waitForElement(`#${participantName}-onParticipantCreated`);
 		expect(await utils.isPresent(`#${participantName}-onParticipantCreated`)).to.be.true;
 	});
@@ -811,7 +1061,7 @@ describe('Testing videoconference EVENTS', () => {
 
 	it('should receive connectionCreated event from LOCAL participant', async () => {
 		const participantName = 'TEST_USER';
-		await browser.get(`${url}?prejoin=false&participantName=${participantName}`);
+		await browser.get(`${url}&prejoin=false&participantName=${participantName}`);
 
 		await utils.waitForElement(`#${participantName}-connectionCreated`);
 		expect(await utils.isPresent(`#${participantName}-connectionCreated`)).to.be.true;
@@ -820,7 +1070,7 @@ describe('Testing videoconference EVENTS', () => {
 	it('should receive sessionDisconnected event from LOCAL participant', async () => {
 		const participantName = 'TEST_USER';
 		let element;
-		await browser.get(`${url}?prejoin=false&participantName=${participantName}`);
+		await browser.get(`${url}&prejoin=false&participantName=${participantName}`);
 
 		await utils.checkSessionIsPresent();
 
@@ -832,6 +1082,169 @@ describe('Testing videoconference EVENTS', () => {
 
 		await utils.waitForElement(`#${participantName}-sessionDisconnected`);
 		expect(await utils.isPresent(`#${participantName}-sessionDisconnected`)).to.be.true;
+	});
+});
+
+describe('Testing replace track with emulated devices', () => {
+	let browser: WebDriver;
+	let utils: OpenViduComponentsPO;
+	async function createChromeBrowser(): Promise<WebDriver> {
+		return await new Builder()
+			.forBrowser(WebComponentConfig.browserName)
+			.withCapabilities(WebComponentConfig.browserCapabilities)
+			.setChromeOptions(WebComponentConfig.browserOptions)
+			.usingServer(WebComponentConfig.seleniumAddress)
+			.build();
+	}
+
+	beforeEach(async () => {
+		browser = await createChromeBrowser();
+		utils = new OpenViduComponentsPO(browser);
+	});
+
+	afterEach(async () => {
+		// console.log('data:image/png;base64,' + await browser.takeScreenshot());
+		await browser.quit();
+	});
+
+	it('should replace the video track in prejoin page', async () => {
+		const script = 'return document.getElementsByTagName("video")[0].srcObject.getVideoTracks()[0].label;';
+
+		await browser.get(`${url}&fakeDevices=true`);
+
+		let videoDevices = await utils.waitForElement('#video-devices-form');
+
+		await videoDevices.click();
+
+		let element = await utils.waitForElement('#option-custom_fake_video_1');
+
+		await element.click();
+
+		let videoLabel;
+
+		await browser.sleep(1000);
+		videoLabel = await browser.executeScript<string>(script);
+		expect(videoLabel).to.be.equal('custom_fake_video_1');
+
+		await videoDevices.click();
+
+		element = await utils.waitForElement('#option-fake_device_0');
+		await element.click();
+
+		await browser.sleep(1000);
+		videoLabel = await browser.executeScript<string>(script);
+		expect(videoLabel).to.be.equal('fake_device_0');
+	});
+
+	it('should replace the video track in videoconference page', async () => {
+		const script = 'return document.getElementsByTagName("video")[0].srcObject.getVideoTracks()[0].label;';
+
+		await browser.get(`${url}&prejoin=false&fakeDevices=true`);
+
+		await utils.checkSessionIsPresent();
+
+		// Checking if toolbar is present
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+
+		// Checking if button panel is present
+		await utils.waitForElement('.mat-menu-content');
+		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+		await utils.clickOn('#toolbar-settings-btn');
+
+		await utils.waitForElement('.settings-container');
+		expect(await utils.isPresent('.settings-container')).to.be.true;
+
+		await utils.clickOn('#video-opt');
+		expect(await utils.isPresent('ov-video-devices-select')).to.be.true;
+
+		let videoDevices = await utils.waitForElement('#video-devices-form');
+
+		await videoDevices.click();
+
+		let element = await utils.waitForElement('#option-custom_fake_video_1');
+
+		await element.click();
+
+		let videoLabel;
+		await browser.sleep(1000);
+		videoLabel = await browser.executeScript<string>(script);
+		expect(videoLabel).to.be.equal('custom_fake_video_1');
+
+		await videoDevices.click();
+
+		element = await utils.waitForElement('#option-fake_device_0');
+		await element.click();
+
+		await browser.sleep(1000);
+		videoLabel = await browser.executeScript<string>(script);
+		expect(videoLabel).to.be.equal('fake_device_0');
+	});
+
+	it('should replace the screen track', async () => {
+		const script = 'return document.getElementsByClassName("OT_video-element screen-type")[0].srcObject.getVideoTracks()[0].label;';
+
+		await browser.get(`${url}&prejoin=false&fakeDevices=true`);
+
+		await utils.checkLayoutPresent();
+		await utils.checkToolbarIsPresent();
+
+		await utils.clickOn('#screenshare-btn');
+
+		await browser.sleep(500);
+
+		let screenLabel = await browser.executeScript<string>(script);
+		expect(screenLabel).not.equal('custom_fake_screen');
+
+		await utils.clickOn('#video-settings-btn-SCREEN');
+		await browser.sleep(500);
+
+		await utils.waitForElement('.video-settings-menu');
+		const replaceBtn = await utils.waitForElement('#replace-screen-button');
+		await replaceBtn.sendKeys(Key.ENTER);
+
+		await browser.sleep(1000);
+		screenLabel = await browser.executeScript<string>(script);
+		expect(screenLabel).to.be.equal('custom_fake_screen');
+	});
+});
+
+describe('Testing stream video menu features', () => {
+	let browser: WebDriver;
+	let utils: OpenViduComponentsPO;
+	async function createChromeBrowser(): Promise<WebDriver> {
+		return await new Builder()
+			.forBrowser(WebComponentConfig.browserName)
+			.withCapabilities(WebComponentConfig.browserCapabilities)
+			.setChromeOptions(WebComponentConfig.browserOptions)
+			.usingServer(WebComponentConfig.seleniumAddress)
+			.build();
+	}
+
+	beforeEach(async () => {
+		browser = await createChromeBrowser();
+		utils = new OpenViduComponentsPO(browser);
+	});
+
+	afterEach(async () => {
+		await browser.quit();
+	});
+
+	it('should not show the Mute sound button for local participant', async () => {
+		await browser.get(`${url}&prejoin=false`);
+
+		await utils.checkLayoutPresent();
+
+		await utils.waitForElement('#video-settings-btn-CAMERA');
+		await utils.clickOn('#video-settings-btn-CAMERA');
+
+		await browser.sleep(500);
+
+		// Checking if mute sound button is not present
+		expect(await utils.isPresent('#sound-btn')).to.be.false;
 	});
 });
 
@@ -856,10 +1269,10 @@ describe('Testing screenshare features', () => {
 		await browser.quit();
 	});
 
-	it('should toggle screensharing', async () => {
-		let element;
-		await browser.get(`${url}?prejoin=false`);
 
+
+	it('should toggle screensharing twice', async () => {
+		await browser.get(`${url}&prejoin=false`);
 		await utils.checkLayoutPresent();
 
 		// Clicking to screensharing button
@@ -868,22 +1281,58 @@ describe('Testing screenshare features', () => {
 		await screenshareButton.click();
 
 		await utils.waitForElement('.OV_big');
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(2);
+		expect(await utils.getNumberOfElements('video')).equals(2);
+
 
 		// Clicking to screensharing button
 		await screenshareButton.click();
+		expect(await utils.getNumberOfElements('video')).equals(1);
 
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(1);
+
+		// toggle screenshare again
+		await screenshareButton.click();
+
+		await utils.waitForElement('.OV_big');
+		expect(await utils.getNumberOfElements('video')).equals(2);
+
+		await screenshareButton.click();
+
+		expect(await utils.getNumberOfElements('video')).equals(1);
+
 	});
 
-	it('should screensharing with audio muted', async () => {
-		let element, isAudioEnabled;
+	it('should show the screen although toggle screensharing with video muted', async () => {
+		await browser.get(`${url}&prejoin=false`);
+
+		await utils.checkLayoutPresent();
+
+		const camButton = await utils.waitForElement('#camera-btn');
+		await camButton.click();
+
+		// Clicking to screensharing button
+		const screenshareButton = await utils.waitForElement('#screenshare-btn');
+		expect(await screenshareButton.isDisplayed()).to.be.true;
+		await screenshareButton.click();
+
+		await browser.sleep(1000);
+		await utils.waitForElement('.OV_big');
+
+		expect(await utils.getNumberOfElements('video')).equals(2);
+
+
+		await screenshareButton.click();
+		await browser.sleep(1000);
+
+		expect(await utils.getNumberOfElements('video')).equals(1);
+
+	});
+
+	it('should screensharing with audio enabled', async () => {
+		let isAudioEnabled;
 		const getAudioScript = (className: string) => {
 			return `return document.getElementsByClassName('${className}')[0].srcObject.getAudioTracks()[0].enabled;`;
 		};
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkLayoutPresent();
 
@@ -896,26 +1345,23 @@ describe('Testing screenshare features', () => {
 		await screenshareButton.click();
 
 		await utils.waitForElement('.screen-type');
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(2);
+		expect(await utils.getNumberOfElements('video')).equals(2);
+
 
 		isAudioEnabled = await browser.executeScript(getAudioScript('screen-type'));
-		expect(isAudioEnabled).to.be.false;
+		expect(isAudioEnabled).to.be.true;
 
 		await utils.waitForElement('#statusMic');
-		element = await browser.findElements(By.id('statusMic'));
-		expect(element.length).equals(2);
+		expect(await utils.getNumberOfElements('#statusMic')).equals(1);
 
 		// Clicking to screensharing button
 		await screenshareButton.click();
+		expect(await utils.getNumberOfElements('video')).equals(1);
 
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(1);
 	});
 
-	it('should show and hide CAMERA stream when muting video with screensharing', async () => {
-		let element;
-		await browser.get(`${url}?prejoin=false`);
+	it('should show CAMERA stream always visible when muting video with screensharing', async () => {
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkLayoutPresent();
 
@@ -925,21 +1371,19 @@ describe('Testing screenshare features', () => {
 		await screenshareButton.click();
 
 		await utils.waitForElement('.OV_big');
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(2);
+		expect(await utils.getNumberOfElements('video')).equals(2);
 
 		const muteVideoButton = await utils.waitForElement('#camera-btn');
 		await muteVideoButton.click();
 
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(1);
+		expect(await utils.getNumberOfElements('video')).equals(2);
 	});
 
-	it('should screenshare has audio active when camera is muted', async () => {
-		let element, isAudioEnabled;
+	it('should screen audio be independent of camera audio', async () => {
+		let isAudioEnabled;
 		const audioEnableScript = 'return document.getElementsByTagName("video")[0].srcObject.getAudioTracks()[0].enabled;';
 
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkLayoutPresent();
 
@@ -948,19 +1392,15 @@ describe('Testing screenshare features', () => {
 		expect(await utils.isPresent('#screenshare-btn')).to.be.true;
 		await screenshareButton.click();
 
-		element = await utils.waitForElement('.OV_big');
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(2);
-
-		element = await browser.findElements(By.id('statusMic'));
-		expect(element.length).equals(1);
+		await utils.waitForElement('.OV_big');
+		expect(await utils.getNumberOfElements('video')).equals(2);
+		expect(await utils.getNumberOfElements('#statusMic')).equals(0);
 
 		// Muting camera video
 		const muteVideoButton = await utils.waitForElement('#camera-btn');
 		await muteVideoButton.click();
 
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(1);
+		expect(await utils.getNumberOfElements('video')).equals(2);
 
 		await browser.sleep(500);
 		expect(await utils.isPresent('#statusMic')).to.be.false;
@@ -971,74 +1411,13 @@ describe('Testing screenshare features', () => {
 
 		// Unmuting camera
 		await muteVideoButton.click();
-
-		element = await utils.waitForElement('.camera-type');
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(2);
-
-		element = await browser.findElements(By.id('statusMic'));
-		expect(element.length).equals(1);
-	});
-
-	it('should camera come back with audio muted when screensharing', async () => {
-		let element, isAudioEnabled;
-
-		const getAudioScript = (className: string) => {
-			return `return document.getElementsByClassName('${className}')[0].srcObject.getAudioTracks()[0].enabled;`;
-		};
-
-		await browser.get(`${url}?prejoin=false`);
-
-		await utils.checkLayoutPresent();
-
-		// Clicking to screensharing button
-		const screenshareButton = await utils.waitForElement('#screenshare-btn');
-		await screenshareButton.click();
-
-		await utils.waitForElement('.screen-type');
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(2);
-
-		element = await browser.findElements(By.id('statusMic'));
-		expect(element.length).equals(1);
-
-		// Mute camera
-		const muteVideoButton = await utils.waitForElement('#camera-btn');
-		await muteVideoButton.click();
-
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(1);
-
-		expect(await utils.isPresent('#statusMic')).to.be.false;
-
-		// Checking if audio is muted after join the room
-		isAudioEnabled = await browser.executeScript(getAudioScript('screen-type'));
-		expect(isAudioEnabled).to.be.true;
-
-		// Mute audio
-		const muteAudioButton = await utils.waitForElement('#mic-btn');
-		await muteAudioButton.click();
-
-		await utils.waitForElement('#statusMic');
-		element = await browser.findElements(By.id('statusMic'));
-		expect(element.length).equals(1);
-
-		isAudioEnabled = await browser.executeScript(getAudioScript('screen-type'));
-		expect(isAudioEnabled).to.be.false;
-
-		// Unmute camera
-		await muteVideoButton.click();
+		await browser.sleep(1000);
 
 		await utils.waitForElement('.camera-type');
-		element = await browser.findElements(By.css('video'));
-		expect(element.length).equals(2);
-
-		element = await browser.findElements(By.id('statusMic'));
-		expect(element.length).equals(2);
-
-		isAudioEnabled = await browser.executeScript(getAudioScript('camera-type'));
-		expect(isAudioEnabled).to.be.false;
+		expect(await utils.getNumberOfElements('video')).equals(2);
+		expect(await utils.getNumberOfElements('#statusMic')).equals(0);
 	});
+
 });
 
 describe('Testing panels', () => {
@@ -1063,38 +1442,42 @@ describe('Testing panels', () => {
 		await browser.quit();
 	});
 
-	it('should toggle BACKGROUND panel on prejoin page when VIDEO is MUTED', async () => {
-		let element;
-		await browser.get(`${url}`);
-		element = await utils.waitForElement('#pre-join-container');
-		expect(await utils.isPresent('#pre-join-container')).to.be.true;
+	/**
+	 * TODO
+	 * It only works with OpenVidu PRO because this is a PRO feature
+	 */
+	// it('should toggle BACKGROUND panel on prejoin page when VIDEO is MUTED', async () => {
+	// 	let element;
+	// 	await browser.get(`${url}`);
+	// 	element = await utils.waitForElement('#pre-join-container');
+	// 	expect(await utils.isPresent('#pre-join-container')).to.be.true;
 
-		const backgroundButton = await utils.waitForElement('#background-effects-btn');
-		expect(await utils.isPresent('#background-effects-btn')).to.be.true;
-		expect(await backgroundButton.isEnabled()).to.be.true;
-		await backgroundButton.click();
-		await browser.sleep(500);
+	// 	const backgroundButton = await utils.waitForElement('#background-effects-btn');
+	// 	expect(await utils.isPresent('#background-effects-btn')).to.be.true;
+	// 	expect(await backgroundButton.isEnabled()).to.be.true;
+	// 	await backgroundButton.click();
+	// 	await browser.sleep(500);
 
-		await utils.waitForElement('#background-effects-container');
-		expect(await utils.isPresent('#background-effects-container')).to.be.true;
+	// 	await utils.waitForElement('#background-effects-container');
+	// 	expect(await utils.isPresent('#background-effects-container')).to.be.true;
 
-		element = await utils.waitForElement('#camera-button');
-		expect(await utils.isPresent('#camera-button')).to.be.true;
-		expect(await element.isEnabled()).to.be.true;
-		await element.click();
+	// 	element = await utils.waitForElement('#camera-button');
+	// 	expect(await utils.isPresent('#camera-button')).to.be.true;
+	// 	expect(await element.isEnabled()).to.be.true;
+	// 	await element.click();
 
-		await browser.sleep(500);
-		element = await utils.waitForElement('#video-poster');
-		expect(await utils.isPresent('#video-poster')).to.be.true;
+	// 	await browser.sleep(500);
+	// 	element = await utils.waitForElement('#video-poster');
+	// 	expect(await utils.isPresent('#video-poster')).to.be.true;
 
-		expect(await backgroundButton.isDisplayed()).to.be.true;
-		expect(await backgroundButton.isEnabled()).to.be.false;
+	// 	expect(await backgroundButton.isDisplayed()).to.be.true;
+	// 	expect(await backgroundButton.isEnabled()).to.be.false;
 
-		expect(await utils.isPresent('#background-effects-container')).to.be.false;
-	});
+	// 	expect(await utils.isPresent('#background-effects-container')).to.be.false;
+	// });
 
 	it('should toggle CHAT panel', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkLayoutPresent();
 
@@ -1115,7 +1498,7 @@ describe('Testing panels', () => {
 	});
 
 	it('should toggle PARTICIPANTS panel', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkLayoutPresent();
 
@@ -1137,7 +1520,7 @@ describe('Testing panels', () => {
 	});
 
 	it('should toggle ACTIVITIES panel', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkLayoutPresent();
 
@@ -1159,7 +1542,7 @@ describe('Testing panels', () => {
 
 	it('should toggle SETTINGS panel', async () => {
 		let element;
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkLayoutPresent();
 
@@ -1185,7 +1568,7 @@ describe('Testing panels', () => {
 	});
 
 	it('should switching between PARTICIPANTS and CHAT panels', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -1228,15 +1611,13 @@ describe('Testing panels', () => {
 
 		// Close chat panel
 		await chatButton.click();
-		await browser.findElements(By.className('input-container'));
-		expect(await utils.isPresent('.input-container')).to.be.false;
-
+		expect(await utils.getNumberOfElements('.input-container')).equals(0);
 		expect(await utils.isPresent('messages-container')).to.be.false;
 	});
 
 	it('should switching between sections in SETTINGS PANEL', async () => {
 		let element;
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkToolbarIsPresent();
 
@@ -1303,7 +1684,7 @@ describe('Testing CHAT features', () => {
 	});
 
 	it('should send an url message and converts in a link', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkLayoutPresent();
 
@@ -1313,7 +1694,6 @@ describe('Testing CHAT features', () => {
 		await utils.waitForElement('.sidenav-menu');
 		await utils.waitForElement('.input-container');
 		expect(await utils.isPresent('.input-container')).to.be.true;
-
 
 		const input = await utils.waitForElement('#chat-input');
 		await input.sendKeys('demos.openvidu.io');
@@ -1325,8 +1705,7 @@ describe('Testing CHAT features', () => {
 	});
 });
 
-
-describe('Testing captions features', () => {
+describe('Testing TOOLBAR features', () => {
 	let browser: WebDriver;
 	let utils: OpenViduComponentsPO;
 	async function createChromeBrowser(): Promise<WebDriver> {
@@ -1347,205 +1726,119 @@ describe('Testing captions features', () => {
 		await browser.quit();
 	});
 
-	it('should SHOW the CAPTIONS PRO feature dialog', async () => {
-		await browser.get(`${url}?prejoin=false`);
+	it('should mute and unmute the local microphone', async () => {
+		await browser.get(`${url}&prejoin=false`);
 
-		await utils.checkSessionIsPresent();
+		await utils.checkLayoutPresent();
 
-		// Checking if toolbar is present
-		await utils.checkToolbarIsPresent();
+		const micButton = await utils.waitForElement('#mic-btn');
+		await micButton.click();
 
-		// Open more options menu
-		await utils.clickOn('#more-options-btn');
+		await utils.waitForElement('#mic-btn #mic_off');
+		expect(await utils.isPresent('#mic-btn #mic_off')).to.be.true;
 
-		await browser.sleep(500);
+		await micButton.click();
 
-		// Checking if button panel is present
-		await utils.waitForElement('.mat-menu-content');
-		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
-
-		await utils.waitForElement('#toolbar-settings-btn');
-		expect(await utils.isPresent('#toolbar-settings-btn')).to.be.true;
-		await utils.clickOn('#toolbar-settings-btn');
-
-		// Expect captions panel shows the pro feature content
-		await utils.waitForElement('#settings-container');
-		await utils.clickOn('#captions-opt');
-		await utils.waitForElement('.pro-feature');
-
-		// Open more options menu
-		await utils.clickOn('#more-options-btn');
-
-		await browser.sleep(500);
-
-		// Checking if button panel is present
-		await utils.waitForElement('.mat-menu-content');
-		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
-
-		// Checking if captions button is present
-		await utils.waitForElement('#captions-btn');
-		expect(await utils.isPresent('#captions-btn')).to.be.true;
-		await utils.clickOn('#captions-btn');
-
-		await utils.waitForElement('ov-pro-feature-template');
-		expect(await utils.isPresent('.captions-container')).to.be.false;
+		await utils.waitForElement('#mic-btn #mic');
+		expect(await utils.isPresent('#mic-btn #mic')).to.be.true;
 	});
 
-/**
- *
- *  The following E2E TESTS only work with OpenVidu PRO
- */
+	it('should mute and unmute the local camera', async () => {
+		await browser.get(`${url}&prejoin=false`);
 
-	// it('should OPEN the CAPTIONS container', async () => {
-	// 	await browser.get(`${url}?prejoin=false`);
+		await utils.checkLayoutPresent();
 
-	// 	await utils.checkSessionIsPresent();
+		const cameraButton = await utils.waitForElement('#camera-btn');
+		await cameraButton.click();
 
-	// 	// Checking if toolbar is present
-	// 	await utils.checkToolbarIsPresent();
+		await utils.waitForElement('#camera-btn #videocam_off');
+		expect(await utils.isPresent('#camera-btn #videocam_off')).to.be.true;
 
-	// 	// Open more options menu
-	// 	await utils.clickOn('#more-options-btn');
+		await cameraButton.click();
 
-	// 	await browser.sleep(500);
+		await utils.waitForElement('#camera-btn #videocam');
+		expect(await utils.isPresent('#camera-btn #videocam')).to.be.true;
+	});
+});
 
-	// 	// Checking if button panel is present
-	// 	await utils.waitForElement('.mat-menu-content');
-	// 	expect(await utils.isPresent('.mat-menu-content')).to.be.true;
 
-	// 	// Checking if captions button is present
-	// 	await utils.waitForElement('#captions-btn');
-	// 	expect(await utils.isPresent('#captions-btn')).to.be.true;
-	// 	await utils.clickOn('#captions-btn');
+describe('Testing video is playing', () => {
+	let browser: WebDriver;
+	let utils: OpenViduComponentsPO;
 
-	// 	await utils.waitForElement('.captions-container');
-	// });
+	async function createChromeBrowser(): Promise<WebDriver> {
+		return await new Builder()
+			.forBrowser(WebComponentConfig.browserName)
+			.withCapabilities(WebComponentConfig.browserCapabilities)
+			.setChromeOptions(WebComponentConfig.browserOptions)
+			.usingServer(WebComponentConfig.seleniumAddress)
+			.build();
+	}
 
-	// it('should OPEN the SETTINGS panel from captions button', async () => {
-	// 	await browser.get(`${url}?prejoin=false`);
+	beforeEach(async () => {
+		browser = await createChromeBrowser();
+		utils = new OpenViduComponentsPO(browser);
+	});
 
-	// 	await utils.checkSessionIsPresent();
+	afterEach(async () => {
+		await browser.quit();
+	});
 
-	// 	// Checking if toolbar is present
-	// 	await utils.checkToolbarIsPresent();
+	it('should play the participant video with only audio', async () => {
+		const sessionName = 'audioOnlyE2E';
+		const fixedUrl = `${url}&sessionName=${sessionName}`;
+		await browser.get(fixedUrl);
 
-	// 	// Open more options menu
-	// 	await utils.clickOn('#more-options-btn');
+		await utils.checkPrejoinIsPresent();
+		await utils.clickOn('#join-button');
 
-	// 	await browser.sleep(500);
+		// Starting new browser for adding the second participant
+		const newTabScript = `window.open("${fixedUrl}")`;
+		await browser.executeScript(newTabScript);
+		const tabs = await browser.getAllWindowHandles();
+		await browser.switchTo().window(tabs[1]);
 
-	// 	// Checking if button panel is present
-	// 	await utils.waitForElement('.mat-menu-content');
-	// 	expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+		await utils.checkPrejoinIsPresent();
+		await utils.clickOn('#camera-button');
+		await utils.clickOn('#join-button');
 
-	// 	// Checking if captions button is present
-	// 	await utils.waitForElement('#captions-btn');
-	// 	expect(await utils.isPresent('#captions-btn')).to.be.true;
-	// 	await utils.clickOn('#captions-btn');
+		// Go to first tab
+		await browser.switchTo().window(tabs[0]);
 
-	// 	await utils.waitForElement('.captions-container');
-	// 	await utils.waitForElement('#caption-settings-btn');
-	// 	await utils.clickOn('#caption-settings-btn');
+		// Wait until NO_STREAM_PLAYING_EVENT exception timeout is reached
+		await browser.sleep(6000);
 
-	// 	await browser.sleep(500);
+		const exceptionQuantity = await utils.getNumberOfElements('#NO_STREAM_PLAYING_EVENT');
+		expect(exceptionQuantity).equals(0);
+	});
 
-	// 	await utils.waitForElement('.settings-container');
-	// 	expect(await utils.isPresent('.settings-container')).to.be.true;
+	it('should play the participant video with only video', async () => {
+		const sessionName = 'videoOnlyE2E';
+		const fixedUrl = `${url}&sessionName=${sessionName}`;
+		await browser.get(fixedUrl);
 
-	// 	await utils.waitForElement('ov-captions-settings');
+		await utils.checkPrejoinIsPresent();
+		await utils.clickOn('#join-button');
 
-	// 	// Expect caption button is not present
-	// 	expect(await utils.isPresent('#caption-settings-btn')).to.be.false;
-	// });
+		// Starting new browser for adding the second participant
+		const newTabScript = `window.open("${fixedUrl}")`;
+		await browser.executeScript(newTabScript);
+		const tabs = await browser.getAllWindowHandles();
+		await browser.switchTo().window(tabs[1]);
 
-	// it('should TOGGLE the CAPTIONS container from settings panel', async () => {
-	// 	await browser.get(`${url}?prejoin=false`);
+		await utils.checkPrejoinIsPresent();
+		await utils.clickOn('#microphone-button');
+		await utils.clickOn('#join-button');
 
-	// 	await utils.checkSessionIsPresent();
+		// Go to first tab
+		await browser.switchTo().window(tabs[0]);
 
-	// 	// Checking if toolbar is present
-	// 	await utils.checkToolbarIsPresent();
+		// Wait until NO_STREAM_PLAYING_EVENT exception timeout is reached
+		await browser.sleep(6000);
 
-	// 	// Open more options menu
-	// 	await utils.clickOn('#more-options-btn');
-
-	// 	await browser.sleep(500);
-
-	// 	// Checking if button panel is present
-	// 	await utils.waitForElement('.mat-menu-content');
-	// 	expect(await utils.isPresent('.mat-menu-content')).to.be.true;
-
-	// 	// Checking if captions button is present
-	// 	await utils.waitForElement('#captions-btn');
-	// 	expect(await utils.isPresent('#captions-btn')).to.be.true;
-	// 	await utils.clickOn('#captions-btn');
-
-	// 	await utils.waitForElement('.captions-container');
-	// 	await utils.waitForElement('#caption-settings-btn');
-	// 	await utils.clickOn('#caption-settings-btn');
-
-	// 	await browser.sleep(500);
-
-	// 	await utils.waitForElement('.settings-container');
-	// 	expect(await utils.isPresent('.settings-container')).to.be.true;
-
-	// 	await utils.waitForElement('ov-captions-settings');
-
-	// 	expect(await utils.isPresent('.captions-container')).to.be.true;
-	// 	await utils.clickOn('#captions-toggle-slide');
-	// 	expect(await utils.isPresent('.captions-container')).to.be.false;
-
-	// 	await browser.sleep(200);
-
-	// 	await utils.clickOn('#captions-toggle-slide');
-	// 	expect(await utils.isPresent('.captions-container')).to.be.true;
-	// });
-
-	// it('should change the CAPTIONS language', async () => {
-	// 	await browser.get(`${url}?prejoin=false`);
-
-	// 	await utils.checkSessionIsPresent();
-
-	// 	// Checking if toolbar is present
-	// 	await utils.checkToolbarIsPresent();
-
-	// 	// Open more options menu
-	// 	await utils.clickOn('#more-options-btn');
-
-	// 	await browser.sleep(500);
-
-	// 	// Checking if button panel is present
-	// 	await utils.waitForElement('.mat-menu-content');
-	// 	expect(await utils.isPresent('.mat-menu-content')).to.be.true;
-
-	// 	// Checking if captions button is present
-	// 	await utils.waitForElement('#captions-btn');
-	// 	expect(await utils.isPresent('#captions-btn')).to.be.true;
-	// 	await utils.clickOn('#captions-btn');
-
-	// 	await utils.waitForElement('.captions-container');
-	// 	await utils.waitForElement('#caption-settings-btn');
-	// 	await utils.clickOn('#caption-settings-btn');
-
-	// 	await browser.sleep(500);
-
-	// 	await utils.waitForElement('.settings-container');
-	// 	expect(await utils.isPresent('.settings-container')).to.be.true;
-
-	// 	await utils.waitForElement('ov-captions-settings');
-
-	// 	expect(await utils.isPresent('.captions-container')).to.be.true;
-
-	// 	await utils.clickOn('.lang-button');
-	// 	await browser.sleep(500);
-
-	// 	await utils.clickOn('#es-ES');
-	// 	await utils.clickOn('.panel-close-button');
-
-	// 	const button = await utils.waitForElement('#caption-settings-btn');
-	// 	expect(await button.getText()).equals('settingsEspañol');
-
-	// });
+		const exceptionQuantity = await utils.getNumberOfElements('#NO_STREAM_PLAYING_EVENT');
+		expect(exceptionQuantity).equals(0);
+	});
 });
 
 describe('Testing WITHOUT MEDIA DEVICES permissions', () => {
@@ -1600,7 +1893,7 @@ describe('Testing WITHOUT MEDIA DEVICES permissions', () => {
 	});
 
 	it('should be able to ACCESS to ROOM page without prejoin', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkSessionIsPresent();
 
@@ -1614,7 +1907,7 @@ describe('Testing WITHOUT MEDIA DEVICES permissions', () => {
 	});
 
 	it('should the settings buttons be disabled', async () => {
-		await browser.get(`${url}?prejoin=false`);
+		await browser.get(`${url}&prejoin=false`);
 
 		await utils.checkToolbarIsPresent();
 
@@ -1646,5 +1939,387 @@ describe('Testing WITHOUT MEDIA DEVICES permissions', () => {
 		button = await utils.waitForElement('#microphone-button');
 		expect(await button.isEnabled()).to.be.false;
 
+	});
+});
+
+describe('Testing PRO features with OpenVidu CE', () => {
+	let browser: WebDriver;
+	let utils: OpenViduComponentsPO;
+	async function createChromeBrowser(): Promise<WebDriver> {
+		return await new Builder()
+			.forBrowser(WebComponentConfig.browserName)
+			.withCapabilities(WebComponentConfig.browserCapabilities)
+			.setChromeOptions(WebComponentConfig.browserOptions)
+			.usingServer(WebComponentConfig.seleniumAddress)
+			.build();
+	}
+
+	beforeEach(async () => {
+		browser = await createChromeBrowser();
+		utils = new OpenViduComponentsPO(browser);
+	});
+
+	afterEach(async () => {
+		await browser.quit();
+	});
+
+	it('should SHOW the VIRTUAL BACKGROUND PRO feature dialog', async () => {
+		await browser.get(`${url}&prejoin=true`);
+
+		await utils.checkPrejoinIsPresent();
+
+		await utils.waitForElement('#background-effects-btn');
+		await utils.clickOn('#background-effects-btn');
+
+		await utils.chceckProFeatureAlertIsPresent();
+
+		// Close alert
+		await (await utils.waitForElement('html')).sendKeys(Key.ESCAPE);
+
+		// Join to room
+		await utils.clickOn('#join-button');
+
+		await utils.checkSessionIsPresent();
+
+		// Checking if toolbar is present
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+
+		await browser.sleep(500);
+
+		// Checking if button panel is present
+		await utils.waitForElement('.mat-menu-content');
+		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+		await utils.waitForElement('#virtual-bg-btn');
+		await utils.clickOn('#virtual-bg-btn');
+
+		// Expect it shows the pro feature alert
+		await utils.chceckProFeatureAlertIsPresent();
+	});
+
+	it('should SHOW the CAPTIONS PRO feature dialog', async () => {
+		await browser.get(`${url}&prejoin=false`);
+
+		await utils.checkSessionIsPresent();
+
+		// Checking if toolbar is present
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+
+		await browser.sleep(500);
+
+		// Checking if button panel is present
+		await utils.waitForElement('.mat-menu-content');
+		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+		await utils.waitForElement('#toolbar-settings-btn');
+		expect(await utils.isPresent('#toolbar-settings-btn')).to.be.true;
+		await utils.clickOn('#toolbar-settings-btn');
+
+		// Expect captions panel shows the pro feature content
+		await utils.waitForElement('#settings-container');
+		await utils.clickOn('#captions-opt');
+		await browser.sleep(1000);
+		await utils.waitForElement('.pro-feature');
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+
+		await browser.sleep(500);
+
+		// Checking if button panel is present
+		await utils.waitForElement('.mat-menu-content');
+		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+		// Checking if captions button is present
+		await utils.waitForElement('#captions-btn');
+		expect(await utils.isPresent('#captions-btn')).to.be.true;
+		await utils.clickOn('#captions-btn');
+
+		await utils.waitForElement('ov-pro-feature-template');
+		expect(await utils.isPresent('.captions-container')).to.be.false;
+	});
+});
+
+/**
+ * TODO:
+ *  The following E2E TESTS only work with OpenVidu PRO.
+ * It should run with OpenVidu PRO
+ */
+// describe('Testing captions features', () => {
+// 	let browser: WebDriver;
+// 	let utils: OpenViduComponentsPO;
+// 	async function createChromeBrowser(): Promise<WebDriver> {
+// 		return await new Builder()
+// 			.forBrowser(WebComponentConfig.browserName)
+// 			.withCapabilities(WebComponentConfig.browserCapabilities)
+// 			.setChromeOptions(WebComponentConfig.browserOptions)
+// 			.usingServer(WebComponentConfig.seleniumAddress)
+// 			.build();
+// 	}
+
+// 	beforeEach(async () => {
+// 		browser = await createChromeBrowser();
+// 		utils = new OpenViduComponentsPO(browser);
+// 	});
+
+// 	afterEach(async () => {
+// 		await browser.quit();
+// 	});
+
+// 	it('should OPEN the CAPTIONS container', async () => {
+// 		await browser.get(`${url}&prejoin=false`);
+
+// 		await utils.checkSessionIsPresent();
+
+// 		// Checking if toolbar is present
+// 		await utils.checkToolbarIsPresent();
+
+// 		// Open more options menu
+// 		await utils.clickOn('#more-options-btn');
+
+// 		await browser.sleep(500);
+
+// 		// Checking if button panel is present
+// 		await utils.waitForElement('.mat-menu-content');
+// 		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+// 		// Checking if captions button is present
+// 		await utils.waitForElement('#captions-btn');
+// 		expect(await utils.isPresent('#captions-btn')).to.be.true;
+// 		await utils.clickOn('#captions-btn');
+
+// 		await utils.waitForElement('.captions-container');
+// 	});
+
+// 	it('should OPEN the SETTINGS panel from captions button', async () => {
+// 		await browser.get(`${url}&prejoin=false`);
+
+// 		await utils.checkSessionIsPresent();
+
+// 		// Checking if toolbar is present
+// 		await utils.checkToolbarIsPresent();
+
+// 		// Open more options menu
+// 		await utils.clickOn('#more-options-btn');
+
+// 		await browser.sleep(500);
+
+// 		// Checking if button panel is present
+// 		await utils.waitForElement('.mat-menu-content');
+// 		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+// 		// Checking if captions button is present
+// 		await utils.waitForElement('#captions-btn');
+// 		expect(await utils.isPresent('#captions-btn')).to.be.true;
+// 		await utils.clickOn('#captions-btn');
+
+// 		await utils.waitForElement('.captions-container');
+// 		await utils.waitForElement('#caption-settings-btn');
+// 		await utils.clickOn('#caption-settings-btn');
+
+// 		await browser.sleep(500);
+
+// 		await utils.waitForElement('.settings-container');
+// 		expect(await utils.isPresent('.settings-container')).to.be.true;
+
+// 		await utils.waitForElement('ov-captions-settings');
+
+// 		// Expect caption button is not present
+// 		expect(await utils.isPresent('#caption-settings-btn')).to.be.false;
+// 	});
+
+// 	it('should TOGGLE the CAPTIONS container from settings panel', async () => {
+// 		await browser.get(`${url}&prejoin=false`);
+
+// 		await utils.checkSessionIsPresent();
+
+// 		// Checking if toolbar is present
+// 		await utils.checkToolbarIsPresent();
+
+// 		// Open more options menu
+// 		await utils.clickOn('#more-options-btn');
+
+// 		await browser.sleep(500);
+
+// 		// Checking if button panel is present
+// 		await utils.waitForElement('.mat-menu-content');
+// 		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+// 		// Checking if captions button is present
+// 		await utils.waitForElement('#captions-btn');
+// 		expect(await utils.isPresent('#captions-btn')).to.be.true;
+// 		await utils.clickOn('#captions-btn');
+
+// 		await utils.waitForElement('.captions-container');
+// 		await utils.waitForElement('#caption-settings-btn');
+// 		await utils.clickOn('#caption-settings-btn');
+
+// 		await browser.sleep(500);
+
+// 		await utils.waitForElement('.settings-container');
+// 		expect(await utils.isPresent('.settings-container')).to.be.true;
+
+// 		await utils.waitForElement('ov-captions-settings');
+
+// 		expect(await utils.isPresent('.captions-container')).to.be.true;
+// 		await utils.clickOn('#captions-toggle-slide');
+// 		expect(await utils.isPresent('.captions-container')).to.be.false;
+
+// 		await browser.sleep(200);
+
+// 		await utils.clickOn('#captions-toggle-slide');
+// 		expect(await utils.isPresent('.captions-container')).to.be.true;
+// 	});
+
+// 	it('should change the CAPTIONS language', async () => {
+// 		await browser.get(`${url}&prejoin=false`);
+
+// 		await utils.checkSessionIsPresent();
+
+// 		// Checking if toolbar is present
+// 		await utils.checkToolbarIsPresent();
+
+// 		// Open more options menu
+// 		await utils.clickOn('#more-options-btn');
+
+// 		await browser.sleep(500);
+
+// 		// Checking if button panel is present
+// 		await utils.waitForElement('.mat-menu-content');
+// 		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+// 		// Checking if captions button is present
+// 		await utils.waitForElement('#captions-btn');
+// 		expect(await utils.isPresent('#captions-btn')).to.be.true;
+// 		await utils.clickOn('#captions-btn');
+
+// 		await utils.waitForElement('.captions-container');
+// 		await utils.waitForElement('#caption-settings-btn');
+// 		await utils.clickOn('#caption-settings-btn');
+
+// 		await browser.sleep(500);
+
+// 		await utils.waitForElement('.settings-container');
+// 		expect(await utils.isPresent('.settings-container')).to.be.true;
+
+// 		await utils.waitForElement('ov-captions-settings');
+
+// 		expect(await utils.isPresent('.captions-container')).to.be.true;
+
+// 		await utils.clickOn('.lang-button');
+// 		await browser.sleep(500);
+
+// 		await utils.clickOn('#es-ES');
+// 		await utils.clickOn('.panel-close-button');
+
+// 		const button = await utils.waitForElement('#caption-settings-btn');
+// 		expect(await button.getText()).equals('settingsEspañol');
+
+// 	});
+// });
+
+describe('Testing WITHOUT MEDIA DEVICES permissions', () => {
+	let browser: WebDriver;
+	let utils: OpenViduComponentsPO;
+	async function createChromeBrowser(): Promise<WebDriver> {
+		return await new Builder()
+			.forBrowser(WebComponentConfig.browserName)
+			.withCapabilities(WebComponentConfig.browserCapabilities)
+			.setChromeOptions(getBrowserOptionsWithoutDevices())
+			.usingServer(WebComponentConfig.seleniumAddress)
+			.build();
+	}
+
+	beforeEach(async () => {
+		browser = await createChromeBrowser();
+		utils = new OpenViduComponentsPO(browser);
+	});
+
+	afterEach(async () => {
+		await browser.quit();
+	});
+
+	it('should be able to ACCESS to PREJOIN page', async () => {
+		await browser.get(`${url}`);
+
+		await utils.checkPrejoinIsPresent();
+
+		let button = await utils.waitForElement('#camera-button');
+		expect(await button.isEnabled()).to.be.false;
+
+		button = await utils.waitForElement('#microphone-button');
+		expect(await button.isEnabled()).to.be.false;
+	});
+
+	it('should be able to ACCESS to ROOM page', async () => {
+		await browser.get(`${url}`);
+
+		await utils.checkPrejoinIsPresent();
+
+		await utils.clickOn('#join-button');
+
+		await utils.checkSessionIsPresent();
+
+		await utils.checkToolbarIsPresent();
+
+		let button = await utils.waitForElement('#camera-btn');
+		expect(await button.isEnabled()).to.be.false;
+
+		button = await utils.waitForElement('#mic-btn');
+		expect(await button.isEnabled()).to.be.false;
+	});
+
+	it('should be able to ACCESS to ROOM page without prejoin', async () => {
+		await browser.get(`${url}&prejoin=false`);
+
+		await utils.checkSessionIsPresent();
+
+		await utils.checkToolbarIsPresent();
+
+		let button = await utils.waitForElement('#camera-btn');
+		expect(await button.isEnabled()).to.be.false;
+
+		button = await utils.waitForElement('#mic-btn');
+		expect(await button.isEnabled()).to.be.false;
+	});
+
+	it('should the settings buttons be disabled', async () => {
+		await browser.get(`${url}&prejoin=false`);
+
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+
+		await browser.sleep(500);
+
+		// Checking if fullscreen button is not present
+		await utils.waitForElement('.mat-menu-content');
+		expect(await utils.isPresent('.mat-menu-content')).to.be.true;
+
+		await utils.clickOn('#toolbar-settings-btn');
+
+		await browser.sleep(500);
+
+		await utils.waitForElement('.settings-container');
+		expect(await utils.isPresent('.settings-container')).to.be.true;
+
+		await utils.clickOn('#video-opt');
+		expect(await utils.isPresent('ov-video-devices-select')).to.be.true;
+
+		let button = await utils.waitForElement('#camera-button');
+		expect(await button.isEnabled()).to.be.false;
+
+		await utils.clickOn('#audio-opt');
+		expect(await utils.isPresent('ov-audio-devices-select')).to.be.true;
+
+		button = await utils.waitForElement('#microphone-button');
+		expect(await button.isEnabled()).to.be.false;
 	});
 });

@@ -33,6 +33,10 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.kurento.client.KurentoClient;
+import org.kurento.commons.exception.KurentoException;
+import org.kurento.jsonrpc.JsonRpcClientClosedException;
+import org.kurento.jsonrpc.client.JsonRpcClientNettyWebSocket;
 import org.kurento.jsonrpc.client.JsonRpcWSConnectionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,7 +182,18 @@ public abstract class KmsManager {
 		return this.mediaNodeManager;
 	}
 
+	protected KurentoClient createKurentoClient(String kmsId, String uri) {
+		JsonRpcWSConnectionListener listener = this.generateKurentoConnectionListener(kmsId);
+		JsonRpcClientNettyWebSocket client = new JsonRpcClientNettyWebSocket(uri, listener);
+		client.setTryReconnectingMaxTime(0);
+		client.setTryReconnectingForever(false);
+		client.setConnectionTimeout(MAX_CONNECT_TIME_MILLIS);
+		client.setRequestTimeout(MAX_REQUEST_TIMEOUT);
+		return KurentoClient.createFromJsonRpcClientHonoringClientTimeouts(client);
+	}
+
 	protected JsonRpcWSConnectionListener generateKurentoConnectionListener(final String kmsId) {
+
 		return new JsonRpcWSConnectionListener() {
 
 			@Override
@@ -295,16 +310,11 @@ public abstract class KmsManager {
 							return;
 						}
 
-						try {
-							kms.getKurentoClient().getServerManager().getInfo();
-						} catch (Exception e) {
-							log.error(
-									"According to Timer KMS with uri {} and KurentoClient [{}] is not reconnected yet. Exception {}",
-									kms.getUri(), kms.getKurentoClient().toString(), e.getClass().getName());
+						if (reconnectKurentoClient(kms)) {
+							nodeRecoveredHandler(kms);
+						} else {
 							return;
 						}
-
-						nodeRecoveredHandler(kms);
 
 					}
 				}, () -> Long.valueOf(INTERVAL_WAIT_MS)); // Try 2 times per second
@@ -314,6 +324,45 @@ public abstract class KmsManager {
 			}
 
 		};
+	}
+
+	private boolean reconnectKurentoClient(Kms kms) {
+		try {
+			kms.getKurentoClient().getServerManager().getInfo();
+			return true;
+		} catch (JsonRpcClientClosedException exception) {
+			log.error(
+					"According to Timer KurentoClient [{}] of KMS with uri {} is closed ({}). Initializing a new KurentoClient",
+					kms.getKurentoClient().toString(), kms.getUri(), exception.getClass().getName());
+			KurentoClient kClient = null;
+			try {
+				kClient = createKurentoClient(kms.getId(), kms.getUri());
+			} catch (KurentoException e) {
+				log.error("Error creating new KurentoClient when connectig to KMS with uri {}. Exception {}: {}",
+						kms.getUri(), e.getClass().getName(), e.getMessage());
+				if (kClient != null) {
+					kClient.destroy();
+				}
+				return false;
+			}
+			try {
+				kClient.getServerManager().getInfo();
+				kms.setKurentoClient(kClient);
+				log.info("Success reconnecting to KMS with uri {} with a new KurentoClient", kms.getUri());
+				return true;
+			} catch (Exception e) {
+				log.error("Error reconnecting to KMS with uri {} with a new KurentoClient. Exception {}: {}",
+						kms.getUri(), e.getClass().getName(), e.getMessage());
+				if (kClient != null) {
+					kClient.destroy();
+				}
+				return false;
+			}
+		} catch (Exception exception) {
+			log.error("According to Timer KMS with uri {} and KurentoClient [{}] is not reconnected yet. Exception {}",
+					kms.getUri(), kms.getKurentoClient().toString(), exception.getClass().getName());
+			return false;
+		}
 	}
 
 	private boolean isNewKms(Kms kms) {
@@ -336,6 +385,10 @@ public abstract class KmsManager {
 
 	public abstract void decrementActiveRecordings(RecordingProperties recordingProperties, String recordingId,
 			Session session);
+
+	public abstract void incrementActiveBroadcasts(RecordingProperties properties, Session session);
+
+	public abstract void decrementActiveBroadcasts(RecordingProperties properties, Session session);
 
 	public abstract void removeMediaNodeUponCrash(String mediaNodeId);
 
@@ -368,11 +421,12 @@ public abstract class KmsManager {
 				.collect(Collectors.toUnmodifiableList());
 		final List<String> affectedRecordingIds = kms.getActiveRecordings().stream().map(entry -> entry.getKey())
 				.collect(Collectors.toUnmodifiableList());
+		final List<String> affectedBroadcasts = new ArrayList<>(kms.getActiveBroadcasts());
 
 		// 1. Send nodeCrashed webhook event
 		String environmentId = getEnvironmentId(kms.getId());
 		sessionEventsHandler.onMediaNodeCrashed(kms, environmentId, timeOfKurentoDisconnection, affectedSessionIds,
-				affectedRecordingIds);
+				affectedRecordingIds, affectedBroadcasts);
 
 		// 2. Remove Media Node from cluster if necessary
 		if (mustRemoveMediaNode) {
@@ -393,13 +447,15 @@ public abstract class KmsManager {
 	}
 
 	public void nodeRecoveredHandler(Kms kms) {
-		log.info("According to Timer KMS with uri {} and KurentoClient [{}] is now reconnected", kms.getUri(),
-				kms.getKurentoClient().toString());
-
-		kms.getKurentoClientReconnectTimer().cancelTimer();
 
 		final boolean mustTriggerNodeRecoveredEvent = kms.hasTriggeredNodeCrashedEvent();
 		final long timeOfKurentoDisconnection = kms.getTimeOfKurentoClientDisconnection();
+
+		log.info("According to Timer KMS with uri {} and KurentoClient [{}] is now reconnected after {} ms",
+				kms.getUri(), kms.getKurentoClient().toString(),
+				(System.currentTimeMillis() - timeOfKurentoDisconnection));
+
+		kms.getKurentoClientReconnectTimer().cancelTimer();
 
 		kms.setKurentoClientConnected(true, true);
 

@@ -56,8 +56,10 @@ public class UpdatableTimerTask extends TimerTask {
 
 	public void cancelTimer() {
 		super.cancel();
-		timer.cancel();
-		timer.purge();
+		if (timer != null) {
+			timer.cancel();
+			timer.purge();
+		}
 	}
 
 	@Override
@@ -67,7 +69,8 @@ public class UpdatableTimerTask extends TimerTask {
 		try {
 			task.run();
 		} catch (Exception e) {
-			log.error("Exception running UpdatableTimerTask: {} - {}", e.getMessage(), e.getStackTrace());
+			log.error("Exception running UpdatableTimerTask ({}): {} - {}", e.getClass().getName(), e.getMessage(),
+					e.getStackTrace());
 		}
 		updateTimer();
 	}

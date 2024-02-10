@@ -59,6 +59,7 @@
 		"CLOSE": "Sluiten",
 		"SEE_MORE": "Zie meer",
 		"PRO_FEATURE": "Deze functie is onderdeel van OpenVidu PRO tier",
+		"PAID_FEATURE": "Deze functie maakt deel uit van de commerciële service van OpenVidu. Neem voor meer informatie contact met ons op via commercial@openvidu.io.",
 		"CHAT": {
 			"TITLE": "Chat",
 			"YOU": "Jij",
@@ -101,6 +102,17 @@
 			"DOWNLOAD": "Downloaden",
 			"RECORDINGS": "OPNAME",
 			"NO_MODERATOR": "Alleen de MOEDERATOR kan de opname starten"
+		},
+		"STREAMING": {
+			"TITLE": "Streaming",
+			"SUBTITLE": "Stream uw vergadering naar uw publiek",
+			"CONTENT_SUBTITLE": "OpenVidu heeft de url van het streamingplatform nodig.",
+			"START": "Start met streamen",
+			"STOP": "Stop met streamen",
+			"URL": "Voeg uw stream-URL in",
+			"CANCEL": "Annuleren",
+			"REQUIRED_URL": "De stream-URL is vereist",
+			"NO_MODERATOR": "Alleen de MODERATOR kan beginnen met streamen"
 		}
 	},
 	"ERRORS": {
@@ -112,6 +124,7 @@
 		"SCREEN_SHARING": "Fout bij het delen van het scherm",
 		"SCREEN_SUPPORT": "Uw browser ondersteunt het delen van schermen niet",
 		"MEDIA_ACCESS": "Toegang tot media-apparaten was niet toegestaan.",
-		"DEVICE_NOT_FOUND": "Er zijn geen video- of audioapparaten gevonden. Sluit er alstublieft ten minste één aan."
+		"DEVICE_NOT_FOUND": "Er zijn geen video- of audioapparaten gevonden. Sluit er alstublieft ten minste één aan.",
+		"SST_CONNECTION": "Verbinding verbroken. Opnieuw verbinden met de spraak-naar-tekstservice..."
 	}
 }

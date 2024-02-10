@@ -283,7 +283,7 @@ public class KurentoParticipant extends Participant {
 						String sdpAnswer = subscriber.subscribe(sdpString, kSender.getPublisher());
 						log.info("PARTICIPANT {}: Is now receiving video from {} in room {}",
 								this.getParticipantPublicId(), senderName, this.session.getSessionId());
-						if (!silent && !this.isRecorderOrSttParticipant()) {
+						if (!silent && !this.isRecorderOrSttOrBroadcastParticipant()) {
 							endpointConfig.getCdr().recordNewSubscriber(this, sender.getPublisherStreamId(),
 									sender.getParticipantPublicId(), subscriber.createdAt());
 						}
@@ -589,7 +589,7 @@ public class KurentoParticipant extends Participant {
 					}
 				}
 
-				if (!this.isRecorderOrSttParticipant()) {
+				if (!this.isRecorderOrSttOrBroadcastParticipant()) {
 					endpointConfig.getCdr().stopSubscriber(this.getParticipantPublicId(), senderName,
 							subscriber.getStreamId(), reason);
 				}
@@ -631,7 +631,10 @@ public class KurentoParticipant extends Participant {
 
 	@Override
 	public String getPublisherStreamId() {
-		return this.publisher.getStreamId();
+		if (this.publisher != null) {
+			return this.publisher.getStreamId();
+		}
+		return null;
 	}
 
 	public void resetPublisherEndpoint(MediaOptions mediaOptions, PassThrough passThru) {

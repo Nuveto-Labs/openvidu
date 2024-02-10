@@ -15,7 +15,7 @@
 	</div>
 
 	<div [@inOutAnimation] id="vc-container" *ngIf="showVideoconference || (!showPrejoin && !loading && !error)">
-		<ov-session  *ngIf="isSessionInitialized && !nodeCrashed" (onSessionCreated)="_onSessionCreated($event)" (onNodeCrashed)="_onNodeCrashed()">
+		<ov-session *ngIf="isSessionInitialized && !nodeCrashed" (onNodeCrashed)="_onNodeCrashed()">
 			<ng-template #toolbar>
 				<ng-container *ngIf="openviduAngularToolbarTemplate">
 					<ng-container *ngTemplateOutlet="openviduAngularToolbarTemplate"></ng-container>
@@ -50,6 +50,8 @@
 		(onActivitiesPanelButtonClicked)="onActivitiesPanelButtonClicked()"
 		(onStartRecordingClicked)="onStartRecordingClicked('toolbar')"
 		(onStopRecordingClicked)="onStopRecordingClicked('toolbar')"
+		(onStartBroadcastingClicked)="onToolbarStartBroadcastingClicked.emit()"
+		(onStopBroadcastingClicked)="onStopBroadcastingClicked('toolbar')"
 	>
 		<ng-template #toolbarAdditionalButtons>
 			<ng-container *ngTemplateOutlet="openviduAngularToolbarAdditionalButtonsTemplate"></ng-container>
@@ -99,6 +101,9 @@
 		(onStartRecordingClicked)="onStartRecordingClicked('panel')"
 		(onStopRecordingClicked)="onStopRecordingClicked('panel')"
 		(onDeleteRecordingClicked)="onDeleteRecordingClicked($event)"
+		(onForceRecordingUpdate)="onForceRecordingUpdate()"
+		(onStartBroadcastingClicked)="onStartBroadcastingClicked($event)"
+		(onStopBroadcastingClicked)="onStopBroadcastingClicked('panel')"
 	></ov-activities-panel>
 </ng-template>
 

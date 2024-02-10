@@ -1,17 +1,17 @@
 <div id="rec-properties-div">
   <label class="label">Recording properties</label>
   <div>
-    <mat-form-field class="inner-text-input" [style.fontSize.px]=14>
+    <mat-form-field *ngIf="!isBroadcast" class="inner-text-input" [style.fontSize.px]=14>
       <input matInput id="recording-name-field" placeholder="Recording name" [(ngModel)]="recordingProperties.name">
     </mat-form-field>
-    <mat-form-field class="inner-text-input" [style.fontSize.px]=14>
+    <mat-form-field *ngIf="!isBroadcast" class="inner-text-input" [style.fontSize.px]=14>
       <mat-select id="rec-outputmode-select" placeholder="Output mode" [(ngModel)]="recordingProperties.outputMode">
         <mat-option *ngFor="let enumerator of enumToArray(recMode)" [value]="enumerator">
           <span [attr.id]="'option-' + enumerator">{{ enumerator }}</span>
         </mat-option>
       </mat-select>
     </mat-form-field>
-    <mat-form-field class="inner-text-input" [style.fontSize.px]=14>
+    <mat-form-field *ngIf="!!recordingProperties.mediaNode" class="inner-text-input" [style.fontSize.px]=14>
       <input matInput id="recording-media-node-field" placeholder="Media Node"
         [(ngModel)]="recordingProperties.mediaNode.id">
     </mat-form-field>
@@ -23,7 +23,7 @@
     </div>
   </div>
   <div
-    *ngIf="recordingProperties.hasVideo && (recordingProperties.outputMode === 'COMPOSED' || recordingProperties.outputMode === 'COMPOSED_QUICK_START')">
+    *ngIf="isBroadcast || (recordingProperties.hasVideo && (recordingProperties.outputMode === 'COMPOSED' || recordingProperties.outputMode === 'COMPOSED_QUICK_START'))">
     <mat-form-field class="inner-text-input" [style.fontSize.px]=14>
       <mat-select placeholder="Recording layout" id="recording-layout-select"
         [(ngModel)]="recordingProperties.recordingLayout">

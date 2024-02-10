@@ -41,9 +41,9 @@ const logger: OpenViduLogger = OpenViduLogger.getInstance();
 let platform: PlatformUtils;
 
 /**
- * Packs local media streams. Participants can publish it to a session. Initialized with [[OpenVidu.initPublisher]] method.
+ * Packs local media streams. Participants can publish it to a session. Initialized with {@link OpenVidu.initPublisher} method.
  *
- * See available event listeners at [[PublisherEventMap]].
+ * See available event listeners at {@link PublisherEventMap}.
  */
 export class Publisher extends StreamManager {
     /**
@@ -52,12 +52,12 @@ export class Publisher extends StreamManager {
     accessAllowed = false;
 
     /**
-     * Whether you have called [[Publisher.subscribeToRemote]] with value `true` or `false` (*false* by default)
+     * Whether you have called {@link Publisher.subscribeToRemote} with value `true` or `false` (*false* by default)
      */
     isSubscribedToRemote = false;
 
     /**
-     * The [[Session]] to which the Publisher belongs
+     * The {@link Session} to which the Publisher belongs
      */
     session: Session; // Initialized by Session.publish(Publisher)
 
@@ -108,13 +108,13 @@ export class Publisher extends StreamManager {
      *
      * > _Only if `Session.publish(Publisher)` has been called for this Publisher_
      *
-     * The [[Session]] object of the local participant will dispatch a `streamPropertyChanged` event with `changedProperty` set to `"audioActive"` and `reason` set to `"publishAudio"`
-     * The [[Publisher]] object of the local participant will also dispatch the exact same event
+     * The {@link Session} object of the local participant will dispatch a `streamPropertyChanged` event with `changedProperty` set to `"audioActive"` and `reason` set to `"publishAudio"`
+     * The {@link Publisher} object of the local participant will also dispatch the exact same event
      *
-     * The [[Session]] object of every other participant connected to the session will dispatch a `streamPropertyChanged` event with `changedProperty` set to `"audioActive"` and `reason` set to `"publishAudio"`
-     * The respective [[Subscriber]] object of every other participant receiving this Publisher's stream will also dispatch the exact same event
+     * The {@link Session} object of every other participant connected to the session will dispatch a `streamPropertyChanged` event with `changedProperty` set to `"audioActive"` and `reason` set to `"publishAudio"`
+     * The respective {@link Subscriber} object of every other participant receiving this Publisher's stream will also dispatch the exact same event
      *
-     * See [[StreamPropertyChangedEvent]] to learn more.
+     * See {@link StreamPropertyChangedEvent} to learn more.
      *
      * @param enabled `true` to publish the audio stream, `false` to unpublish it
      */
@@ -162,20 +162,22 @@ export class Publisher extends StreamManager {
      *
      * > _Only if `Session.publish(Publisher)` has been called for this Publisher_
      *
-     * The [[Session]] object of the local participant will dispatch a `streamPropertyChanged` event with `changedProperty` set to `"videoActive"` and `reason` set to `"publishVideo"`
-     * The [[Publisher]] object of the local participant will also dispatch the exact same event
+     * The {@link Session} object of the local participant will dispatch a `streamPropertyChanged` event with `changedProperty` set to `"videoActive"` and `reason` set to `"publishVideo"`
+     * The {@link Publisher} object of the local participant will also dispatch the exact same event
      *
-     * The [[Session]] object of every other participant connected to the session will dispatch a `streamPropertyChanged` event with `changedProperty` set to `"videoActive"` and `reason` set to `"publishVideo"`
-     * The respective [[Subscriber]] object of every other participant receiving this Publisher's stream will also dispatch the exact same event
+     * The {@link Session} object of every other participant connected to the session will dispatch a `streamPropertyChanged` event with `changedProperty` set to `"videoActive"` and `reason` set to `"publishVideo"`
+     * The respective {@link Subscriber} object of every other participant receiving this Publisher's stream will also dispatch the exact same event
      *
-     * See [[StreamPropertyChangedEvent]] to learn more.
+     * See {@link StreamPropertyChangedEvent} to learn more.
      *
      * @param enabled `true` to publish the video stream, `false` to unpublish it
      * @param resource
-     * - If parameter **`enabled`** is `false`, this optional parameter is of type boolean. It can be set to `true` to forcibly free the hardware resource associated to the video track, or can be set to `false` to keep the access to the hardware resource.
+     * 
+     * If parameter **`enabled`** is `false`, this optional parameter is of type boolean. It can be set to `true` to forcibly free the hardware resource associated to the video track, or can be set to `false` to keep the access to the hardware resource.
      * Not freeing the resource makes the operation much more efficient, but depending on the platform two side-effects can be introduced: the video device may not be accessible by other applications and the access light of
-     * webcams may remain on. This is platform-dependent: some browsers will not present the side-effects even when not freeing the resource.</li>
-     * - If parameter **`enabled`** is `true`, this optional parameter is of type [MediaStreamTrack](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack). It can be set to force the restoration of the video track with a custom track. This may be
+     * webcams may remain on. This is platform-dependent: some browsers will not present the side-effects even when not freeing the resource.
+     * 
+     * If parameter **`enabled`** is `true`, this optional parameter is of type [MediaStreamTrack](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack). It can be set to force the restoration of the video track with a custom track. This may be
      * useful if the Publisher was unpublished freeing the hardware resource, and openvidu-browser is not able to successfully re-create the video track as it was before unpublishing. In this way previous track settings will be ignored and this MediaStreamTrack
      * will be used instead.
      */
@@ -278,7 +280,7 @@ export class Publisher extends StreamManager {
     }
 
     /**
-     * Call this method before [[Session.publish]] if you prefer to subscribe to your Publisher's remote stream instead of using the local stream, as any other user would do.
+     * Call this method before {@link Session.publish} if you prefer to subscribe to your Publisher's remote stream instead of using the local stream, as any other user would do.
      */
     subscribeToRemote(value?: boolean): void {
         value = value !== undefined ? value : true;
@@ -287,7 +289,7 @@ export class Publisher extends StreamManager {
     }
 
     /**
-     * See [[EventDispatcher.on]]
+     * See {@link EventDispatcher.on}
      */
     on<K extends keyof PublisherEventMap>(type: K, handler: (event: PublisherEventMap[K]) => void): this {
         super.on(<any>type, handler);
@@ -315,7 +317,7 @@ export class Publisher extends StreamManager {
     }
 
     /**
-     * See [[EventDispatcher.once]]
+     * See {@link EventDispatcher.once}
      */
     once<K extends keyof PublisherEventMap>(type: K, handler: (event: PublisherEventMap[K]) => void): this {
         super.once(<any>type, handler);
@@ -343,7 +345,7 @@ export class Publisher extends StreamManager {
     }
 
     /**
-     * See [[EventDispatcher.off]]
+     * See {@link EventDispatcher.off}
      */
     off<K extends keyof PublisherEventMap>(type: K, handler?: (event: PublisherEventMap[K]) => void): this {
         super.off(<any>type, handler);
@@ -355,7 +357,7 @@ export class Publisher extends StreamManager {
      * without having to renegotiate the whole WebRTC connection (that is, initializing a new Publisher, unpublishing the previous one
      * and publishing the new one).
      *
-     * You can get this new MediaStreamTrack by using the native Web API or simply with [[OpenVidu.getUserMedia]] method.
+     * You can get this new MediaStreamTrack by using the native Web API or simply with {@link OpenVidu.getUserMedia} method.
      *
      * **WARNING: this method has been proven to work in the majority of cases, but there may be some combinations of published/replaced tracks that may be incompatible
      * between them and break the connection in OpenVidu Server. A complete renegotiation may be the only solution in this case.
@@ -468,6 +470,15 @@ export class Publisher extends StreamManager {
                         };
 
                         if (this.stream.isSendScreen()) {
+
+                            if(this.stream.isSendAudio() && mediaStream.getAudioTracks().length === 0){
+                                // If sending audio is enabled and there are no audio tracks in the mediaStream, disable audio for screen sharing.
+                                this.stream.audioActive = false;
+                                this.stream.hasAudio = false;
+                                this.stream.outboundStreamOpts.publisherProperties.publishAudio = false;
+                                this.stream.outboundStreamOpts.publisherProperties.audioSource = false;
+                            }
+
                             // Set interval to listen for screen resize events
                             this.screenShareResizeInterval = setInterval(() => {
                                 const settings: MediaTrackSettings = mediaStream.getVideoTracks()[0].getSettings();
@@ -502,7 +513,7 @@ export class Publisher extends StreamManager {
 
             const getMediaSuccess = async (mediaStream: MediaStream, definedAudioConstraint) => {
                 this.clearPermissionDialogTimer(startTime, timeForDialogEvent);
-                if (this.stream.isSendScreen() && this.stream.isSendAudio()) {
+                if (this.stream.isSendScreen() && this.properties.audioSource !== 'screen' && this.stream.isSendAudio()) {
                     // When getting desktop as user media audio constraint must be false. Now we can ask for it if required
                     constraintsAux.audio = definedAudioConstraint;
                     constraintsAux.video = false;
@@ -642,7 +653,7 @@ export class Publisher extends StreamManager {
 
                     try {
                         if (this.stream.isSendScreen() && navigator.mediaDevices['getDisplayMedia'] && !platform.isElectron()) {
-                            const mediaStream = await navigator.mediaDevices['getDisplayMedia']({ video: true });
+                            const mediaStream = await navigator.mediaDevices['getDisplayMedia']({ video: true, audio: this.properties.audioSource === 'screen' });
                             this.openvidu.addAlreadyProvidedTracks(myConstraints, mediaStream);
                             await getMediaSuccess(mediaStream, definedAudioConstraint);
                         } else {
@@ -698,7 +709,7 @@ export class Publisher extends StreamManager {
     getVideoDimensions(): Promise<{ width: number; height: number }> {
         return new Promise((resolve, reject) => {
             // Ionic iOS and Safari iOS supposedly require the video element to actually exist inside the DOM
-            const requiresDomInsertion: boolean = platform.isIonicIos() || platform.isIOSWithSafari();
+            const requiresDomInsertion: boolean = (platform.isIonicIos() || platform.isIOSWithSafari()) && (this.videoReference.readyState < 1);
 
             let loadedmetadataListener;
             const resolveDimensions = () => {

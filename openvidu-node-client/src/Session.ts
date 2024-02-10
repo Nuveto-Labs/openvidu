@@ -15,7 +15,7 @@
  *
  */
 
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { Connection } from './Connection';
 import { ConnectionProperties } from './ConnectionProperties';
 import { MediaMode } from './MediaMode';
@@ -26,11 +26,13 @@ import { RecordingLayout } from './RecordingLayout';
 import { RecordingMode } from './RecordingMode';
 import { SessionProperties } from './SessionProperties';
 import { TokenOptions } from './TokenOptions';
-import { RecordingProperties } from 'RecordingProperties';
-import { IceServerProperties } from 'IceServerProperties';
+import { RecordingProperties } from './RecordingProperties';
+import { IceServerProperties } from './IceServerProperties';
+import { OpenViduLogger } from './Logger/OpenViduLogger';
+
+const logger: OpenViduLogger = OpenViduLogger.getInstance();
 
 export class Session {
-
     /**
      * Unique identifier of the Session
      */
@@ -48,25 +50,25 @@ export class Session {
 
     /**
      * Array of Connections to the Session. This property always initialize as an empty array and
-     * **will remain unchanged since the last time method [[Session.fetch]] or [[OpenVidu.fetch]] was called**.
+     * **will remain unchanged since the last time method {@link Session.fetch} or {@link OpenVidu.fetch} was called**.
      * Exceptions to this rule are:
      *
-     * - Calling [[Session.createConnection]] automatically adds the new Connection object to the local collection.
-     * - Calling [[Session.forceUnpublish]] automatically updates each affected local Connection object.
-     * - Calling [[Session.forceDisconnect]] automatically updates each affected local Connection object.
-     * - Calling [[Session.updateConnection]] automatically updates the attributes of the affected local Connection object.
+     * - Calling {@link Session.createConnection} automatically adds the new Connection object to the local collection.
+     * - Calling {@link Session.forceUnpublish} automatically updates each affected local Connection object.
+     * - Calling {@link Session.forceDisconnect} automatically updates each affected local Connection object.
+     * - Calling {@link Session.updateConnection} automatically updates the attributes of the affected local Connection object.
      *
-     * To get the array of Connections with their current actual value, you must call [[Session.fetch]] or [[OpenVidu.fetch]]
-     * before consulting property [[connections]]
+     * To get the array of Connections with their current actual value, you must call {@link Session.fetch} or {@link OpenVidu.fetch}
+     * before consulting property {@link connections}
      */
     connections: Connection[] = [];
 
     /**
-     * Array containing the active Connections of the Session. It is a subset of [[Session.connections]] array containing only
-     * those Connections with property [[Connection.status]] to `active`.
+     * Array containing the active Connections of the Session. It is a subset of {@link Session.connections} array containing only
+     * those Connections with property {@link Connection.status} to `active`.
      *
-     * To get the array of active Connections with their current actual value, you must call [[Session.fetch]] or [[OpenVidu.fetch]]
-     * before consulting property [[activeConnections]]
+     * To get the array of active Connections with their current actual value, you must call {@link Session.fetch} or {@link OpenVidu.fetch}
+     * before consulting property {@link activeConnections}
      */
     activeConnections: Connection[] = [];
 
@@ -74,6 +76,11 @@ export class Session {
      * Whether the session is being recorded or not
      */
     recording = false;
+
+    /**
+     * Whether the session is being broadcasted or not
+     */
+    broadcasting = false;
 
     /**
      * @hidden
@@ -96,7 +103,7 @@ export class Session {
     }
 
     /**
-     * @deprecated Use [[Session.createConnection]] instead to get a [[Connection]] object.
+     * @deprecated Use {@link Session.createConnection} instead to get a {@link Connection} object.
      *
      * @returns A Promise that is resolved to the generated _token_ string if success and rejected with an
      * [Error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error) object if not
@@ -105,29 +112,29 @@ export class Session {
         return new Promise<string>((resolve, reject) => {
             const data = JSON.stringify({
                 session: this.sessionId,
-                role: (!!tokenOptions && !!tokenOptions.role) ? tokenOptions.role : null,
-                data: (!!tokenOptions && !!tokenOptions.data) ? tokenOptions.data : null,
-                kurentoOptions: (!!tokenOptions && !!tokenOptions.kurentoOptions) ? tokenOptions.kurentoOptions : null
+                role: !!tokenOptions && !!tokenOptions.role ? tokenOptions.role : null,
+                data: !!tokenOptions && !!tokenOptions.data ? tokenOptions.data : null,
+                kurentoOptions: !!tokenOptions && !!tokenOptions.kurentoOptions ? tokenOptions.kurentoOptions : null
             });
-            axios.post(
-                this.ov.host + OpenVidu.API_TOKENS,
-                data,
-                {
+            axios
+                .post(this.ov.host + OpenVidu.API_TOKENS, data, {
                     headers: {
-                        'Authorization': this.ov.basicAuth,
+                        Authorization: this.ov.basicAuth,
                         'Content-Type': 'application/json'
-                    }
-                }
-            )
-                .then(res => {
+                    },
+                    validateStatus: (_) => true
+                })
+                .then((res) => {
                     if (res.status === 200) {
                         // SUCCESS response from openvidu-server. Resolve token
                         resolve(res.data.token);
                     } else {
                         // ERROR response from openvidu-server. Resolve HTTP status
-                        reject(new Error(res.status.toString()));
+                        this.ov.handleError(res, reject);
                     }
-                }).catch(error => {
+                })
+                .catch((error) => {
+                    // Request error.
                     this.ov.handleError(error, reject);
                 });
         });
@@ -136,36 +143,37 @@ export class Session {
     /**
      * Creates a new Connection object associated to Session object and configured with
      * `connectionProperties`. Each user connecting to the Session requires a Connection.
-     * The token string value to send to the client side is available at [[Connection.token]].
+     * The token string value to send to the client side is available at {@link Connection.token}.
      *
-     * @returns A Promise that is resolved to the generated [[Connection]] object if success and rejected with an
+     * @returns A Promise that is resolved to the generated {@link Connection} object if success and rejected with an
      * [Error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error) object if not
      */
     public createConnection(connectionProperties?: ConnectionProperties): Promise<Connection> {
         return new Promise<Connection>((resolve, reject) => {
             const data = JSON.stringify({
-                type: (!!connectionProperties && !!connectionProperties.type) ? connectionProperties.type : null,
-                data: (!!connectionProperties && !!connectionProperties.data) ? connectionProperties.data : null,
+                type: !!connectionProperties && !!connectionProperties.type ? connectionProperties.type : null,
+                data: !!connectionProperties && !!connectionProperties.data ? connectionProperties.data : null,
                 record: !!connectionProperties ? connectionProperties.record : null,
-                role: (!!connectionProperties && !!connectionProperties.role) ? connectionProperties.role : null,
-                kurentoOptions: (!!connectionProperties && !!connectionProperties.kurentoOptions) ? connectionProperties.kurentoOptions : null,
-                rtspUri: (!!connectionProperties && !!connectionProperties.rtspUri) ? connectionProperties.rtspUri : null,
+                role: !!connectionProperties && !!connectionProperties.role ? connectionProperties.role : null,
+                kurentoOptions:
+                    !!connectionProperties && !!connectionProperties.kurentoOptions ? connectionProperties.kurentoOptions : null,
+                rtspUri: !!connectionProperties && !!connectionProperties.rtspUri ? connectionProperties.rtspUri : null,
                 adaptativeBitrate: !!connectionProperties ? connectionProperties.adaptativeBitrate : null,
                 onlyPlayWithSubscribers: !!connectionProperties ? connectionProperties.onlyPlayWithSubscribers : null,
-                networkCache: (!!connectionProperties && (connectionProperties.networkCache != null)) ? connectionProperties.networkCache : null,
-                customIceServers: (!!connectionProperties && (!!connectionProperties.customIceServers != null)) ? connectionProperties.customIceServers : null
+                networkCache:
+                    !!connectionProperties && connectionProperties.networkCache != null ? connectionProperties.networkCache : null,
+                customIceServers:
+                    !!connectionProperties && !!connectionProperties.customIceServers != null ? connectionProperties.customIceServers : null
             });
-            axios.post(
-                this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId + '/connection',
-                data,
-                {
+            axios
+                .post(this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId + '/connection', data, {
                     headers: {
-                        'Authorization': this.ov.basicAuth,
+                        Authorization: this.ov.basicAuth,
                         'Content-Type': 'application/json'
-                    }
-                }
-            )
-                .then(res => {
+                    },
+                    validateStatus: (_) => true
+                })
+                .then((res) => {
                     if (res.status === 200) {
                         // SUCCESS response from openvidu-server. Store and resolve Connection
                         const connection = new Connection(res.data);
@@ -176,9 +184,11 @@ export class Session {
                         resolve(new Connection(res.data));
                     } else {
                         // ERROR response from openvidu-server. Resolve HTTP status
-                        reject(new Error(res.status.toString()));
+                        this.ov.handleError(res, reject);
                     }
-                }).catch(error => {
+                })
+                .catch((error) => {
+                    // Request error.
                     this.ov.handleError(error, reject);
                 });
         });
@@ -192,26 +202,27 @@ export class Session {
      */
     public close(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            axios.delete(
-                this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId,
-                {
+            axios
+                .delete(this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId, {
                     headers: {
-                        'Authorization': this.ov.basicAuth,
+                        Authorization: this.ov.basicAuth,
                         'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }
-            )
-                .then(res => {
+                    },
+                    validateStatus: (_) => true
+                })
+                .then((res) => {
                     if (res.status === 204) {
                         // SUCCESS response from openvidu-server
-                        const indexToRemove: number = this.ov.activeSessions.findIndex(s => s.sessionId === this.sessionId);
+                        const indexToRemove: number = this.ov.activeSessions.findIndex((s) => s.sessionId === this.sessionId);
                         this.ov.activeSessions.splice(indexToRemove, 1);
                         resolve();
                     } else {
                         // ERROR response from openvidu-server. Resolve HTTP status
-                        reject(new Error(res.status.toString()));
+                        this.ov.handleError(res, reject);
                     }
-                }).catch(error => {
+                })
+                .catch((error) => {
+                    // Request error.
                     this.ov.handleError(error, reject);
                 });
         });
@@ -219,10 +230,10 @@ export class Session {
 
     /**
      * Updates every property of the Session with the current status it has in OpenVidu Server. This is especially useful for accessing the list of
-     * Connections of the Session ([[Session.connections]], [[Session.activeConnections]]) and use those values to call [[Session.forceDisconnect]],
-     * [[Session.forceUnpublish]] or [[Session.updateConnection]].
+     * Connections of the Session ({@link Session.connections}, {@link Session.activeConnections}) and use those values to call {@link Session.forceDisconnect},
+     * {@link Session.forceUnpublish} or {@link Session.updateConnection}.
      *
-     * To update all Session objects owned by OpenVidu object at once, call [[OpenVidu.fetch]]
+     * To update all Session objects owned by OpenVidu object at once, call {@link OpenVidu.fetch}
      *
      * @returns A promise resolved to true if the Session status has changed with respect to the server, or to false if not.
      *          This applies to any property or sub-property of the Session object
@@ -230,28 +241,29 @@ export class Session {
     public fetch(): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
             const beforeJSON: string = JSON.stringify(this, this.removeCircularOpenViduReference);
-            axios.get(
-                this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId + '?pendingConnections=true',
-                {
+            axios
+                .get(this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId + '?pendingConnections=true', {
                     headers: {
-                        'Authorization': this.ov.basicAuth,
+                        Authorization: this.ov.basicAuth,
                         'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }
-            )
-                .then(res => {
+                    },
+                    validateStatus: (_) => true
+                })
+                .then((res) => {
                     if (res.status === 200) {
                         // SUCCESS response from openvidu-server
                         this.resetWithJson(res.data);
                         const afterJSON: string = JSON.stringify(this, this.removeCircularOpenViduReference);
                         const hasChanged: boolean = !(beforeJSON === afterJSON);
-                        console.log("Session info fetched for session '" + this.sessionId + "'. Any change: " + hasChanged);
+                        logger.log("Session info fetched for session '" + this.sessionId + "'. Any change: " + hasChanged);
                         resolve(hasChanged);
                     } else {
                         // ERROR response from openvidu-server. Resolve HTTP status
-                        reject(new Error(res.status.toString()));
+                        this.ov.handleError(res, reject);
                     }
-                }).catch(error => {
+                })
+                .catch((error) => {
+                    // Request error.
                     this.ov.handleError(error, reject);
                 });
         });
@@ -267,7 +279,7 @@ export class Session {
      * In the second case, the token of the Connection will be invalidated and no user will be able to connect to the session with it.
      *
      * This method automatically updates the properties of the local affected objects. This means that there is no need to call
-     * [[Session.fetch]] or [[OpenVidu.fetch]]] to see the changes consequence of the execution of this method applied in the local objects.
+     * {@link Session.fetch} or {@link OpenVidu.fetch}] to see the changes consequence of the execution of this method applied in the local objects.
      *
      * @param connection The Connection object to remove from the session, or its `connectionId` property
      *
@@ -277,20 +289,20 @@ export class Session {
     public forceDisconnect(connection: string | Connection): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             const connectionId: string = typeof connection === 'string' ? connection : (<Connection>connection).connectionId;
-            axios.delete(
-                this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId + '/connection/' + connectionId,
-                {
+            axios
+                .delete(this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId + '/connection/' + connectionId, {
                     headers: {
-                        'Authorization': this.ov.basicAuth,
+                        Authorization: this.ov.basicAuth,
                         'Content-Type': 'application/x-www-form-urlencoded'
-                    }
+                    },
+                    validateStatus: (_) => true
                 })
-                .then(res => {
+                .then((res) => {
                     if (res.status === 204) {
                         // SUCCESS response from openvidu-server
                         // Remove connection from connections array
                         let connectionClosed;
-                        this.connections = this.connections.filter(con => {
+                        this.connections = this.connections.filter((con) => {
                             if (con.connectionId !== connectionId) {
                                 return true;
                             } else {
@@ -300,13 +312,13 @@ export class Session {
                         });
                         // Remove every Publisher of the closed connection from every subscriber list of other connections
                         if (!!connectionClosed) {
-                            connectionClosed.publishers.forEach(publisher => {
-                                this.connections.forEach(con => {
-                                    con.subscribers = con.subscribers.filter(subscriber => {
+                            connectionClosed.publishers.forEach((publisher) => {
+                                this.connections.forEach((con) => {
+                                    con.subscribers = con.subscribers.filter((subscriber) => {
                                         // tslint:disable:no-string-literal
                                         if (!!subscriber['streamId']) {
                                             // Subscriber with advanced webRtc configuration properties
-                                            return (subscriber['streamId'] !== publisher.streamId);
+                                            return subscriber['streamId'] !== publisher.streamId;
                                             // tslint:enable:no-string-literal
                                         } else {
                                             // Regular string subscribers
@@ -316,31 +328,34 @@ export class Session {
                                 });
                             });
                         } else {
-                            console.warn("The closed connection wasn't fetched in OpenVidu Node Client. No changes in the collection of active connections of the Session");
+                            logger.warn(
+                                "The closed connection wasn't fetched in OpenVidu Node Client. No changes in the collection of active connections of the Session"
+                            );
                         }
                         this.updateActiveConnectionsArray();
-                        console.log("Connection '" + connectionId + "' closed");
+                        logger.log("Connection '" + connectionId + "' closed");
                         resolve();
                     } else {
                         // ERROR response from openvidu-server. Resolve HTTP status
-                        reject(new Error(res.status.toString()));
+                        this.ov.handleError(res, reject);
                     }
                 })
-                .catch(error => {
+                .catch((error) => {
+                    // Request error.
                     this.ov.handleError(error, reject);
                 });
         });
     }
 
     /**
-     * Forces some Connection to unpublish a Stream (identified by its `streamId` or the corresponding [[Publisher]] object owning it).
+     * Forces some Connection to unpublish a Stream (identified by its `streamId` or the corresponding {@link Publisher} object owning it).
      * OpenVidu Browser will trigger the proper events on the client-side (`streamDestroyed`) with reason set to `"forceUnpublishByServer"`.
      *
-     * You can get `publisher` parameter from [[Connection.publishers]] array ([[Publisher.streamId]] for getting each `streamId` property).
-     * Remember to call [[Session.fetch]] or [[OpenVidu.fetch]] before to fetch the current actual properties of the Session from OpenVidu Server
+     * You can get `publisher` parameter from {@link Connection.publishers} array ({@link Publisher.streamId} for getting each `streamId` property).
+     * Remember to call {@link Session.fetch} or {@link OpenVidu.fetch} before to fetch the current actual properties of the Session from OpenVidu Server
      *
      * This method automatically updates the properties of the local affected objects. This means that there is no need to call
-     * [[Session.fetch]] or [[OpenVidu.fetch]] to see the changes consequence of the execution of this method applied in the local objects.
+     * {@link Session.fetch} or {@link OpenVidu.fetch} to see the changes consequence of the execution of this method applied in the local objects.
      *
      * @param publisher The Publisher object to unpublish, or its `streamId` property
      *
@@ -350,42 +365,43 @@ export class Session {
     public forceUnpublish(publisher: string | Publisher): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             const streamId: string = typeof publisher === 'string' ? publisher : (<Publisher>publisher).streamId;
-            axios.delete(
-                this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId + '/stream/' + streamId,
-                {
+            axios
+                .delete(this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId + '/stream/' + streamId, {
                     headers: {
-                        'Authorization': this.ov.basicAuth,
+                        Authorization: this.ov.basicAuth,
                         'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                }
-            )
-                .then(res => {
+                    },
+                    validateStatus: (_) => true
+                })
+                .then((res) => {
                     if (res.status === 204) {
                         // SUCCESS response from openvidu-server
-                        this.connections.forEach(connection => {
+                        this.connections.forEach((connection) => {
                             // Try to remove the Publisher from the Connection publishers collection
-                            connection.publishers = connection.publishers.filter(pub => pub.streamId !== streamId);
+                            connection.publishers = connection.publishers.filter((pub) => pub.streamId !== streamId);
                             // Try to remove the Publisher from the Connection subscribers collection
                             if (!!connection.subscribers && connection.subscribers.length > 0) {
                                 // tslint:disable:no-string-literal
                                 if (!!connection.subscribers[0]['streamId']) {
                                     // Subscriber with advanced webRtc configuration properties
-                                    connection.subscribers = connection.subscribers.filter(sub => sub['streamId'] !== streamId);
+                                    connection.subscribers = connection.subscribers.filter((sub) => sub['streamId'] !== streamId);
                                     // tslint:enable:no-string-literal
                                 } else {
                                     // Regular string subscribers
-                                    connection.subscribers = connection.subscribers.filter(sub => sub !== streamId);
+                                    connection.subscribers = connection.subscribers.filter((sub) => sub !== streamId);
                                 }
                             }
                         });
                         this.updateActiveConnectionsArray();
-                        console.log("Stream '" + streamId + "' unpublished");
+                        logger.log("Stream '" + streamId + "' unpublished");
                         resolve();
                     } else {
                         // ERROR response from openvidu-server. Resolve HTTP status
-                        reject(new Error(res.status.toString()));
+                        this.ov.handleError(res, reject);
                     }
-                }).catch(error => {
+                })
+                .catch((error) => {
+                    // Request error.
                     this.ov.handleError(error, reject);
                 });
         });
@@ -398,46 +414,44 @@ export class Session {
      * <a href="https://docs.openvidu.io/en/2.23.0/openvidu-enterprise/" style="display: inline-block; background-color: rgb(156, 39, 176); color: white; font-weight: bold; padding: 0px 5px; margin: 0 2px 0 2px; border-radius: 3px; font-size: 13px; line-height:21px; text-decoration: none; font-family: Montserrat, sans-serif">ENTERPRISE</a>
      * editions**
      *
-     * Updates the properties of a Connection  with a [[ConnectionProperties]] object.
+     * Updates the properties of a Connection  with a {@link ConnectionProperties} object.
      * Only these properties can be updated:
      *
-     * - [[ConnectionProperties.role]]
-     * - [[ConnectionProperties.record]]
+     * - {@link ConnectionProperties.role}
+     * - {@link ConnectionProperties.record}
      *
      * This method automatically updates the properties of the local affected objects. This means that there is no need to call
-     * [[Session.fetch]] or [[OpenVidu.fetch]] to see the changes consequence of the execution of this method applied in the local objects.
+     * {@link Session.fetch} or {@link OpenVidu.fetch} to see the changes consequence of the execution of this method applied in the local objects.
      *
      * The affected client will trigger one [ConnectionPropertyChangedEvent](/en/stable/api/openvidu-browser/classes/ConnectionPropertyChangedEvent.html)
      * for each modified property.
      *
-     * @param connectionId The [[Connection.connectionId]] of the Connection object to modify
-     * @param connectionProperties A new [[ConnectionProperties]] object with the updated values to apply
+     * @param connectionId The {@link Connection.connectionId} of the Connection object to modify
+     * @param connectionProperties A new {@link ConnectionProperties} object with the updated values to apply
      *
-     * @returns A Promise that is resolved to the updated [[Connection]] object if the operation was
+     * @returns A Promise that is resolved to the updated {@link Connection} object if the operation was
      *          successful and rejected with an [Error](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error) object if not
      */
     public updateConnection(connectionId: string, connectionProperties: ConnectionProperties): Promise<Connection | undefined> {
         return new Promise<any>((resolve, reject) => {
-            axios.patch(
-                this.ov.host + OpenVidu.API_SESSIONS + "/" + this.sessionId + "/connection/" + connectionId,
-                connectionProperties,
-                {
+            axios
+                .patch(this.ov.host + OpenVidu.API_SESSIONS + '/' + this.sessionId + '/connection/' + connectionId, connectionProperties, {
                     headers: {
-                        'Authorization': this.ov.basicAuth,
+                        Authorization: this.ov.basicAuth,
                         'Content-Type': 'application/json'
-                    }
-                }
-            )
-                .then(res => {
+                    },
+                    validateStatus: (_) => true
+                })
+                .then((res) => {
                     if (res.status === 200) {
-                        console.log('Connection ' + connectionId + ' updated');
+                        logger.log('Connection ' + connectionId + ' updated');
                     } else {
                         // ERROR response from openvidu-server. Resolve HTTP status
-                        reject(new Error(res.status.toString()));
+                        this.ov.handleError(res, reject);
                         return;
                     }
                     // Update the actual Connection object with the new options
-                    const existingConnection: Connection = this.connections.find(con => con.connectionId === connectionId);
+                    const existingConnection: Connection = this.connections.find((con) => con.connectionId === connectionId);
                     if (!existingConnection) {
                         // The updated Connection is not available in local map
                         const newConnection: Connection = new Connection(res.data);
@@ -450,7 +464,9 @@ export class Session {
                         this.updateActiveConnectionsArray();
                         resolve(existingConnection);
                     }
-                }).catch(error => {
+                })
+                .catch((error) => {
+                    // Request error.
                     this.ov.handleError(error, reject);
                 });
         });
@@ -468,28 +484,23 @@ export class Session {
      */
     public getSessionHttp(): Promise<string> {
         return new Promise<string>((resolve, reject) => {
-
             if (!!this.sessionId) {
                 resolve(this.sessionId);
             }
 
             this.sanitizeDefaultSessionProperties(this.properties);
 
-            const data = JSON.stringify(
-                this.properties
-            );
+            const data = JSON.stringify(this.properties);
 
-            axios.post(
-                this.ov.host + OpenVidu.API_SESSIONS,
-                data,
-                {
+            axios
+                .post(this.ov.host + OpenVidu.API_SESSIONS, data, {
                     headers: {
-                        'Authorization': this.ov.basicAuth,
+                        Authorization: this.ov.basicAuth,
                         'Content-Type': 'application/json'
-                    }
-                }
-            )
-                .then(res => {
+                    },
+                    validateStatus: (_) => true
+                })
+                .then((res) => {
                     if (res.status === 200) {
                         // SUCCESS response from openvidu-server. Resolve token
                         this.sessionId = res.data.id;
@@ -503,18 +514,20 @@ export class Session {
                         this.properties.allowTranscoding = res.data.allowTranscoding;
                         this.sanitizeDefaultSessionProperties(this.properties);
                         resolve(this.sessionId);
-                    } else {
-                        // ERROR response from openvidu-server. Resolve HTTP status
-                        reject(new Error(res.status.toString()));
-                    }
-                }).catch(error => {
-                    if (!!error.response && error.response.status === 409) {
+                    } else if (res.status === 409) {
                         // 'customSessionId' already existed
                         this.sessionId = this.properties.customSessionId;
-                        this.fetch().then(() => resolve(this.sessionId));
+                        this.fetch()
+                            .then(() => resolve(this.sessionId))
+                            .catch((error) => this.ov.handleError(error, reject));
                     } else {
-                        this.ov.handleError(error, reject);
+                        // ERROR response from openvidu-server. Resolve HTTP status
+                        this.ov.handleError(res, reject);
                     }
+                })
+                .catch((error) => {
+                    // Request error.
+                    this.ov.handleError(error, reject);
                 });
         });
     }
@@ -526,6 +539,7 @@ export class Session {
         this.sessionId = json.sessionId;
         this.createdAt = json.createdAt;
         this.recording = json.recording;
+        this.broadcasting = json.broadcasting;
         this.properties = {
             customSessionId: json.customSessionId,
             mediaMode: json.mediaMode,
@@ -553,10 +567,10 @@ export class Session {
 
         // 1. Array to store fetched connections and later remove closed ones
         const fetchedConnectionIds: string[] = [];
-        json.connections.content.forEach(jsonConnection => {
+        json.connections.content.forEach((jsonConnection) => {
             const connectionObj: Connection = new Connection(jsonConnection);
             fetchedConnectionIds.push(connectionObj.connectionId);
-            let storedConnection = this.connections.find(c => c.connectionId === connectionObj.connectionId);
+            let storedConnection = this.connections.find((c) => c.connectionId === connectionObj.connectionId);
 
             if (!!storedConnection) {
                 // 2. Update existing Connection
@@ -575,14 +589,13 @@ export class Session {
         }
 
         // Order connections by time of creation
-        this.connections.sort((c1, c2) => (c1.createdAt > c2.createdAt) ? 1 : ((c2.createdAt > c1.createdAt) ? -1 : 0));
+        this.connections.sort((c1, c2) => (c1.createdAt > c2.createdAt ? 1 : c2.createdAt > c1.createdAt ? -1 : 0));
 
         // Order Ice candidates in connection properties
-        this.connections.forEach(connection => {
-            if (connection.connectionProperties.customIceServers != null &&
-                connection.connectionProperties.customIceServers.length > 0) {
+        this.connections.forEach((connection) => {
+            if (connection.connectionProperties.customIceServers != null && connection.connectionProperties.customIceServers.length > 0) {
                 // Order alphabetically Ice servers using url just to keep the same list order.
-                const simpleIceComparator = (a: IceServerProperties, b: IceServerProperties) => (a.url > b.url) ? 1 : -1
+                const simpleIceComparator = (a: IceServerProperties, b: IceServerProperties) => (a.url > b.url ? 1 : -1);
                 connection.connectionProperties.customIceServers.sort(simpleIceComparator);
             }
         });
@@ -595,13 +608,13 @@ export class Session {
      * @hidden
      */
     equalTo(other: Session): boolean {
-        let equals: boolean = (
+        let equals: boolean =
             this.sessionId === other.sessionId &&
             this.createdAt === other.createdAt &&
             this.recording === other.recording &&
+            this.broadcasting === other.broadcasting &&
             this.connections.length === other.connections.length &&
-            JSON.stringify(this.properties) === JSON.stringify(other.properties)
-        );
+            JSON.stringify(this.properties) === JSON.stringify(other.properties);
         if (equals) {
             let i = 0;
             while (equals && i < this.connections.length) {
@@ -630,7 +643,7 @@ export class Session {
      */
     private updateActiveConnectionsArray() {
         this.activeConnections = [];
-        this.connections.forEach(con => {
+        this.connections.forEach((con) => {
             if (con.status === 'active') {
                 this.activeConnections.push(con);
             }
@@ -641,10 +654,9 @@ export class Session {
      * @hidden
      */
     private sanitizeDefaultSessionProperties(props: SessionProperties) {
-
-        props.mediaMode = (props.mediaMode != null) ? props.mediaMode : MediaMode.ROUTED;
-        props.recordingMode = (props.recordingMode != null) ? props.recordingMode : RecordingMode.MANUAL;
-        props.customSessionId = (props.customSessionId != null) ? props.customSessionId : '';
+        props.mediaMode = props.mediaMode != null ? props.mediaMode : MediaMode.ROUTED;
+        props.recordingMode = props.recordingMode != null ? props.recordingMode : RecordingMode.MANUAL;
+        props.customSessionId = props.customSessionId != null ? props.customSessionId : '';
 
         // Remove null values: either set, or undefined
         props.mediaNode = props.mediaNode ?? undefined;
@@ -654,22 +666,51 @@ export class Session {
         if (!props.defaultRecordingProperties) {
             props.defaultRecordingProperties = {};
         }
-        props.defaultRecordingProperties.name = (props.defaultRecordingProperties?.name != null) ? props.defaultRecordingProperties.name : '';
-        props.defaultRecordingProperties.hasAudio = (props.defaultRecordingProperties?.hasAudio != null) ? props.defaultRecordingProperties.hasAudio : Recording.DefaultRecordingPropertiesValues.hasAudio;
-        props.defaultRecordingProperties.hasVideo = (props.defaultRecordingProperties?.hasVideo != null) ? props.defaultRecordingProperties.hasVideo : Recording.DefaultRecordingPropertiesValues.hasVideo;
-        props.defaultRecordingProperties.outputMode = (props.defaultRecordingProperties?.outputMode != null) ? props.defaultRecordingProperties.outputMode : Recording.DefaultRecordingPropertiesValues.outputMode;
+        props.defaultRecordingProperties.name = props.defaultRecordingProperties?.name != null ? props.defaultRecordingProperties.name : '';
+        props.defaultRecordingProperties.hasAudio =
+            props.defaultRecordingProperties?.hasAudio != null
+                ? props.defaultRecordingProperties.hasAudio
+                : Recording.DefaultRecordingPropertiesValues.hasAudio;
+        props.defaultRecordingProperties.hasVideo =
+            props.defaultRecordingProperties?.hasVideo != null
+                ? props.defaultRecordingProperties.hasVideo
+                : Recording.DefaultRecordingPropertiesValues.hasVideo;
+        props.defaultRecordingProperties.outputMode =
+            props.defaultRecordingProperties?.outputMode != null
+                ? props.defaultRecordingProperties.outputMode
+                : Recording.DefaultRecordingPropertiesValues.outputMode;
         props.defaultRecordingProperties.mediaNode = props.defaultRecordingProperties?.mediaNode;
-        if ((props.defaultRecordingProperties.outputMode === Recording.OutputMode.COMPOSED || props.defaultRecordingProperties.outputMode == Recording.OutputMode.COMPOSED_QUICK_START) && props.defaultRecordingProperties.hasVideo) {
-            props.defaultRecordingProperties.recordingLayout = (props.defaultRecordingProperties.recordingLayout != null) ? props.defaultRecordingProperties.recordingLayout : Recording.DefaultRecordingPropertiesValues.recordingLayout;
-            props.defaultRecordingProperties.resolution = (props.defaultRecordingProperties.resolution != null) ? props.defaultRecordingProperties.resolution : Recording.DefaultRecordingPropertiesValues.resolution;
-            props.defaultRecordingProperties.frameRate = (props.defaultRecordingProperties.frameRate != null) ? props.defaultRecordingProperties.frameRate : Recording.DefaultRecordingPropertiesValues.frameRate;
-            props.defaultRecordingProperties.shmSize = (props.defaultRecordingProperties.shmSize != null) ? props.defaultRecordingProperties.shmSize : Recording.DefaultRecordingPropertiesValues.shmSize;
+        if (
+            (props.defaultRecordingProperties.outputMode === Recording.OutputMode.COMPOSED ||
+                props.defaultRecordingProperties.outputMode == Recording.OutputMode.COMPOSED_QUICK_START) &&
+            props.defaultRecordingProperties.hasVideo
+        ) {
+            props.defaultRecordingProperties.recordingLayout =
+                props.defaultRecordingProperties.recordingLayout != null
+                    ? props.defaultRecordingProperties.recordingLayout
+                    : Recording.DefaultRecordingPropertiesValues.recordingLayout;
+            props.defaultRecordingProperties.resolution =
+                props.defaultRecordingProperties.resolution != null
+                    ? props.defaultRecordingProperties.resolution
+                    : Recording.DefaultRecordingPropertiesValues.resolution;
+            props.defaultRecordingProperties.frameRate =
+                props.defaultRecordingProperties.frameRate != null
+                    ? props.defaultRecordingProperties.frameRate
+                    : Recording.DefaultRecordingPropertiesValues.frameRate;
+            props.defaultRecordingProperties.shmSize =
+                props.defaultRecordingProperties.shmSize != null
+                    ? props.defaultRecordingProperties.shmSize
+                    : Recording.DefaultRecordingPropertiesValues.shmSize;
             if (props.defaultRecordingProperties.recordingLayout === RecordingLayout.CUSTOM) {
-                props.defaultRecordingProperties.customLayout = (props.defaultRecordingProperties.customLayout != null) ? props.defaultRecordingProperties.customLayout : '';
+                props.defaultRecordingProperties.customLayout =
+                    props.defaultRecordingProperties.customLayout != null ? props.defaultRecordingProperties.customLayout : '';
             }
         }
         if (props.defaultRecordingProperties.outputMode === Recording.OutputMode.INDIVIDUAL) {
-            props.defaultRecordingProperties.ignoreFailedStreams = (props.defaultRecordingProperties?.ignoreFailedStreams != null) ? props.defaultRecordingProperties.ignoreFailedStreams : Recording.DefaultRecordingPropertiesValues.ignoreFailedStreams;
+            props.defaultRecordingProperties.ignoreFailedStreams =
+                props.defaultRecordingProperties?.ignoreFailedStreams != null
+                    ? props.defaultRecordingProperties.ignoreFailedStreams
+                    : Recording.DefaultRecordingPropertiesValues.ignoreFailedStreams;
         }
 
         this.formatMediaNodeObjectIfNecessary(props.defaultRecordingProperties);
@@ -686,5 +727,4 @@ export class Session {
             }
         }
     }
-
 }

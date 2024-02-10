@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { By, until, WebDriver, WebElement } from 'selenium-webdriver';
 
 export class OpenViduComponentsPO {
-	private TIMEOUT = 30 * 1000;
+	private TIMEOUT = 10 * 1000;
 	private POLL_TIMEOUT = 1 * 1000;
 
 	constructor(private browser: WebDriver) {}
@@ -14,6 +14,10 @@ export class OpenViduComponentsPO {
 			`Time out waiting for ${selector}`,
 			this.POLL_TIMEOUT
 		);
+	}
+
+	async getNumberOfElements(selector: string): Promise<number> {
+		return (await this.browser.findElements(By.css(selector))).length;
 	}
 
 	async isPresent(selector: string): Promise<boolean> {
@@ -56,6 +60,11 @@ export class OpenViduComponentsPO {
 		await this.waitForElement('#toolbar');
 		await this.waitForElement('#media-buttons-container');
 		expect(await this.isPresent('#media-buttons-container')).to.be.true;
+	}
+
+	async chceckProFeatureAlertIsPresent(): Promise<void> {
+		await this.waitForElement('ov-pro-feature-template');
+		expect(await this.isPresent('ov-pro-feature-template')).to.be.true;
 	}
 
 	async clickOn(selector: string): Promise<void> {

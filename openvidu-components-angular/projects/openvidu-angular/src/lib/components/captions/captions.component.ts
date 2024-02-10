@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { PanelEvent, PanelService } from '../../services/panel/panel.service';
+import { PanelService } from '../../services/panel/panel.service';
 
 import { animate, style, transition, trigger } from '@angular/animations';
 import { Session, SpeechToTextEvent } from 'openvidu-browser';
-import { CaptionModel } from '../../models/caption.model';
-import { PanelSettingsOptions, PanelType } from '../../models/panel.model';
+import { CaptionModel, CaptionsLangOption } from '../../models/caption.model';
+import { PanelEvent, PanelSettingsOptions, PanelType } from '../../models/panel.model';
 import { CaptionService } from '../../services/caption/caption.service';
 import { OpenViduService } from '../../services/openvidu/openvidu.service';
 import { ParticipantService } from '../../services/participant/participant.service';
@@ -42,6 +42,7 @@ export class CaptionsComponent implements OnInit {
 	captionEvents: CaptionModel[] = [];
 
 	session: Session;
+	isSttReady: boolean = true;
 
 	private deleteFirstTimeout: NodeJS.Timeout;
 	private deleteAllTimeout: NodeJS.Timeout;
@@ -49,9 +50,11 @@ export class CaptionsComponent implements OnInit {
 	private DELETE_TIMEOUT = 10 * 1000;
 	private MAX_EVENTS_LIMIT = 3;
 	private captionLanguageSubscription: Subscription;
-	private captionLangSelected: { name: string; ISO: string };
+	private captionLangSelected: CaptionsLangOption;
 	private screenSizeSub: Subscription;
 	private panelTogglingSubscription: Subscription;
+	private sttStatusSubscription: Subscription;
+
 
 	constructor(
 		private panelService: PanelService,
@@ -62,14 +65,12 @@ export class CaptionsComponent implements OnInit {
 	) {}
 
 	async ngOnInit(): Promise<void> {
+		this.subscribeToSTTStatus();
 		this.captionService.setCaptionsEnabled(true);
 		this.captionLangSelected = this.captionService.getLangSelected();
 		this.session = this.openviduService.getWebcamSession();
 
-		for (const p of this.participantService.getRemoteParticipants()) {
-			const stream = p.getCameraConnection().streamManager.stream;
-			await this.session.subscribeToSpeechToText(stream, this.captionLangSelected.ISO);
-		}
+		await this.openviduService.subscribeRemotesToSTT(this.captionLangSelected.lang);
 
 		this.subscribeToCaptionLanguage();
 		this.subscribeToPanelToggling();
@@ -77,16 +78,14 @@ export class CaptionsComponent implements OnInit {
 	}
 
 	async ngOnDestroy() {
+		await this.openviduService.unsubscribeRemotesFromSTT();
 		this.captionService.setCaptionsEnabled(false);
 		if (this.screenSizeSub) this.screenSizeSub.unsubscribe();
 		if (this.panelTogglingSubscription) this.panelTogglingSubscription.unsubscribe();
+		if(this.sttStatusSubscription) this.sttStatusSubscription.unsubscribe();
 		this.session.off('speechToTextMessage');
 		this.captionEvents = [];
 
-		for (const p of this.participantService.getRemoteParticipants()) {
-			const stream = p.getCameraConnection().streamManager.stream;
-			await this.session.unsubscribeFromSpeechToText(stream);
-		}
 	}
 
 	onSettingsCliked() {
@@ -95,22 +94,24 @@ export class CaptionsComponent implements OnInit {
 
 	private subscribeToTranscription() {
 		this.session.on('speechToTextMessage', (event: SpeechToTextEvent) => {
-			clearInterval(this.deleteAllTimeout);
-			const { connectionId, data } = event.connection;
-			const nickname: string = this.participantService.getNicknameFromConnectionData(data);
-			const color = this.participantService.getRemoteParticipantByConnectionId(connectionId)?.colorProfile || '';
+			if(!!event.text) {
+				clearInterval(this.deleteAllTimeout);
+				const { connectionId, data } = event.connection;
+				const nickname: string = this.participantService.getNicknameFromConnectionData(data);
+				const color = this.participantService.getRemoteParticipantByConnectionId(connectionId)?.colorProfile || '';
 
-			const caption: CaptionModel = {
-				connectionId,
-				nickname,
-				color,
-				text: event.text,
-				type: event.reason
-			};
-			this.updateCaption(caption);
-			// Delete all events when there are no more events for a period of time
-			this.deleteAllEventsAfterDelay(this.DELETE_TIMEOUT);
-			this.cd.markForCheck();
+				const caption: CaptionModel = {
+					connectionId,
+					nickname,
+					color,
+					text: event.text,
+					type: event.reason
+				};
+				this.updateCaption(caption);
+				// Delete all events when there are no more events for a period of time
+				this.deleteAllEventsAfterDelay(this.DELETE_TIMEOUT);
+				this.cd.markForCheck();
+			}
 		});
 	}
 	private updateCaption(caption: CaptionModel): void {
@@ -187,9 +188,16 @@ export class CaptionsComponent implements OnInit {
 		}, timeout);
 	}
 
+	private subscribeToSTTStatus() {
+		this.sttStatusSubscription = this.openviduService.isSttReadyObs.subscribe((ready: boolean) => {
+			this.isSttReady = ready;
+			this.cd.markForCheck();
+		});
+	}
+
 	private subscribeToCaptionLanguage() {
-		this.captionLanguageSubscription = this.captionService.captionLangObs.subscribe((lang) => {
-			this.captionLangSelected = lang;
+		this.captionLanguageSubscription = this.captionService.captionLangObs.subscribe((langOpt) => {
+			this.captionLangSelected = langOpt;
 			this.cd.markForCheck();
 		});
 	}

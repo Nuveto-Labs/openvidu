@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
-import org.bouncycastle.util.Arrays;
 import org.kurento.jsonrpc.internal.server.config.JsonRpcConfiguration;
 import org.kurento.jsonrpc.server.JsonRpcConfigurer;
 import org.kurento.jsonrpc.server.JsonRpcHandlerRegistry;
@@ -43,6 +42,8 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.event.EventListener;
 
+import io.openvidu.server.broadcast.BroadcastManager;
+import io.openvidu.server.broadcast.BroadcastManagerDummy;
 import io.openvidu.server.cdr.CDRLogger;
 import io.openvidu.server.cdr.CDRLoggerFile;
 import io.openvidu.server.cdr.CallDetailRecord;
@@ -156,6 +157,12 @@ public class OpenViduServer implements JsonRpcConfigurer {
 
 	@Bean
 	@ConditionalOnMissingBean
+	public RpcNotificationService notificationService() {
+		return new RpcNotificationService();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	@DependsOn("openviduConfig")
 	public SessionEventsHandler sessionEventsHandler() {
 		return new KurentoSessionEventsHandler();
@@ -186,12 +193,6 @@ public class OpenViduServer implements JsonRpcConfigurer {
 	@ConditionalOnMissingBean
 	public LoadManager loadManager() {
 		return new DummyLoadManager();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public RpcNotificationService notificationService() {
-		return new RpcNotificationService();
 	}
 
 	@Bean
@@ -236,6 +237,12 @@ public class OpenViduServer implements JsonRpcConfigurer {
 	@ConditionalOnMissingBean
 	public MediaNodeManager mediaNodeManager() {
 		return new MediaNodeManagerDummy();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public BroadcastManager broadcastManager() {
+		return new BroadcastManagerDummy();
 	}
 
 	@Bean
@@ -289,7 +296,13 @@ public class OpenViduServer implements JsonRpcConfigurer {
 
 		log.info("Using /dev/urandom for secure random generation");
 		System.setProperty("java.security.egd", "file:/dev/./urandom");
-		SpringApplication.run(OpenViduServer.class, Arrays.append(args, "--spring.main.banner-mode=off"));
+
+		String[] argsAux = new String[args.length + 2];
+		System.arraycopy(args, 0, argsAux, 0, args.length);
+		argsAux[argsAux.length - 2] = "--spring.main.banner-mode=off";
+		argsAux[argsAux.length - 1] = "--spring.main.allow-circular-references=true";
+
+		SpringApplication.run(OpenViduServer.class, argsAux);
 
 	}
 

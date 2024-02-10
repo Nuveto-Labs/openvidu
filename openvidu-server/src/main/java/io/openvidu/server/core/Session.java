@@ -39,6 +39,7 @@ import com.google.gson.JsonObject;
 import io.openvidu.client.OpenViduException;
 import io.openvidu.client.OpenViduException.Code;
 import io.openvidu.java.client.SessionProperties;
+import io.openvidu.server.broadcast.BroadcastManager;
 import io.openvidu.server.config.OpenviduConfig;
 import io.openvidu.server.recording.service.RecordingManager;
 
@@ -46,6 +47,7 @@ public class Session implements SessionInterface {
 
 	protected OpenviduConfig openviduConfig;
 	protected RecordingManager recordingManager;
+	protected BroadcastManager broadcastManager;
 
 	protected ConcurrentMap<String, Token> tokens = new ConcurrentHashMap<>();
 	protected final ConcurrentMap<String, Participant> participants = new ConcurrentHashMap<>();
@@ -90,17 +92,19 @@ public class Session implements SessionInterface {
 		this.sessionProperties = previousSession.getSessionProperties();
 		this.openviduConfig = previousSession.openviduConfig;
 		this.recordingManager = previousSession.recordingManager;
+		this.broadcastManager = previousSession.broadcastManager;
 		this.tokens = previousSession.tokens;
 	}
 
 	public Session(String sessionId, SessionProperties sessionProperties, OpenviduConfig openviduConfig,
-			RecordingManager recordingManager) {
+			RecordingManager recordingManager, BroadcastManager broadcastManager) {
 		this.sessionId = sessionId;
 		this.startTime = System.currentTimeMillis();
 		this.uniqueSessionId = sessionId + "_" + this.startTime;
 		this.sessionProperties = sessionProperties;
 		this.openviduConfig = openviduConfig;
 		this.recordingManager = recordingManager;
+		this.broadcastManager = broadcastManager;
 	}
 
 	public String getSessionId() {
@@ -139,13 +143,8 @@ public class Session implements SessionInterface {
 		return null;
 	}
 
-	public boolean onlyRecorderAndOrSttParticipant() {
-		if (this.participants.size() == 1) {
-			return this.participants.values().iterator().next().isRecorderOrSttParticipant();
-		} else if (this.participants.size() == 2) {
-			return this.participants.values().stream().allMatch(p -> p.isRecorderOrSttParticipant());
-		}
-		return false;
+	public boolean onlyRecorderAndOrSttAndOrBroadcastParticipant() {
+		return this.participants.values().stream().allMatch(p -> p.isRecorderOrSttOrBroadcastParticipant());
 	}
 
 	public int getActivePublishers() {
@@ -208,6 +207,10 @@ public class Session implements SessionInterface {
 		return null;
 	}
 
+	public String getMediaNodeIp() {
+		return null;
+	}
+
 	protected void checkClosed() {
 		if (isClosed()) {
 			throw new OpenViduException(Code.ROOM_CLOSED_ERROR_CODE, "The session '" + sessionId + "' is closed");
@@ -219,8 +222,8 @@ public class Session implements SessionInterface {
 		Set<Participant> snapshotOfActiveConnections = this.getParticipants().stream().collect(Collectors.toSet());
 		JsonArray jsonArray = new JsonArray();
 		snapshotOfActiveConnections.forEach(participant -> {
-			// Filter RECORDER and STT participants
-			if (!participant.isRecorderOrSttParticipant()) {
+			// Filter RECORDER/STT/BROADCAST participants
+			if (!participant.isRecorderOrSttOrBroadcastParticipant()) {
 				jsonArray.add(withWebrtcStats ? participant.withStatsToJson() : participant.toJson());
 			}
 		});
@@ -244,6 +247,7 @@ public class Session implements SessionInterface {
 		json.addProperty("sessionId", this.sessionId); // TODO: deprecated. Better use only "id"
 		json.addProperty("createdAt", this.startTime);
 		json.addProperty("recording", this.recordingManager.sessionIsBeingRecorded(this.sessionId));
+		json.addProperty("broadcasting", this.broadcastManager.sessionIsBeingBroadcasted(this.sessionId));
 
 		// Add keys from SessionProperties
 		JsonObject sessionPropertiesJson = sessionProperties.toJson();

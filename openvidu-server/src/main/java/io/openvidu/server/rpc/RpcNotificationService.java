@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonObject;
 
 import io.openvidu.client.OpenViduException;
+import io.openvidu.server.core.EndReason;
 import io.openvidu.server.core.IdentifierPrefixes;
 
 public class RpcNotificationService {
@@ -44,6 +45,12 @@ public class RpcNotificationService {
 
 	private ScheduledExecutorService closeWsScheduler = Executors
 			.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+
+	private RpcHandler rpcHandler;
+
+	public void setRpcHandler(RpcHandler rpcHandler) {
+		this.rpcHandler = rpcHandler;
+	}
 
 	public RpcConnection newRpcConnection(Transaction t, Request<JsonObject> request) {
 		String participantPrivateId = t.getSession().getSessionId();
@@ -118,9 +125,17 @@ public class RpcNotificationService {
 		try {
 			s.sendNotification(method, params);
 		} catch (KurentoException e) {
+
 			if (e.getCause() instanceof IllegalStateException) {
 				log.warn("Notification '{}' couldn't be sent to participant with privateId {}: {}", method,
 						participantPrivateId, e.getCause().getMessage());
+
+				// TODO BEGIN: this is an ad-hoc fix to clean any ghost participant of sessions
+				log.warn("Removing ghost participant with participant private id {}", participantPrivateId);
+				EndReason reason = getEndReasonFromParams(params);
+				this.rpcHandler.leaveRoomAfterConnClosed(participantPrivateId, reason);
+				// TODO END: this is an ad-hoc fix to clean any ghost participant of sessions
+
 			} else {
 				log.error("Exception sending notification '{}': {} to participant with private id {}", method, params,
 						participantPrivateId, e);
@@ -181,6 +196,23 @@ public class RpcNotificationService {
 
 	private boolean isIpcamParticipant(String participantPrivateId) {
 		return participantPrivateId.startsWith(IdentifierPrefixes.IPCAM_ID);
+	}
+
+	/**
+	 * Returns a possible EndReason from the params of a notification.
+	 * Returns null if no EndReason is found
+	 * @param params
+	 * @return EndReason
+	 */
+	private EndReason getEndReasonFromParams(Object params) {
+		try {
+			if (params != null && params instanceof JsonObject) {
+				String rawParamReason = ((JsonObject) params).get("reason").getAsString();
+				return EndReason.valueOf(rawParamReason);
+			}
+		} catch (Exception e) {}
+		log.warn("No EndReason found in notification params");
+		return null;
 	}
 
 }

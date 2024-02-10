@@ -218,7 +218,7 @@ public class RecordingManager {
 
 	private void downloadRecordingImageToLocal(LocalDockerManager dockMng) {
 		log.info("Recording module required: Downloading openvidu/openvidu-recording:"
-				+ openviduConfig.getOpenViduRecordingVersion() + " Docker image (350MB aprox)");
+				+ openviduConfig.getOpenViduRecordingVersion() + " Docker image");
 
 		if (dockMng.dockerImageExistsLocally(
 				openviduConfig.getOpenviduRecordingImageRepo() + ":" + openviduConfig.getOpenViduRecordingVersion())) {
@@ -304,20 +304,17 @@ public class RecordingManager {
 							this.cdr.recordRecordingStatusChanged(recording, null, recording.getCreatedAt(),
 									Status.started);
 
-							if (!(OutputMode.COMPOSED.equals(properties.outputMode()) && properties.hasVideo())) {
-								// Directly send recording started notification for all cases except for
-								// COMPOSED recordings with video (will be sent on first RECORDER subscriber)
-								// Both INDIVIDUAL and COMPOSED_QUICK_START should notify immediately
-								this.sessionHandler.sendRecordingStartedNotification(session, recording);
-							}
+							this.sessionHandler.sendRecordingStartedNotification(session, recording);
+
 							if (session.getActivePublishers() == 0) {
 								// Init automatic recording stop if no publishers when starting the recording
 								log.info(
 										"No publisher in session {}. Starting {} seconds countdown for stopping recording",
 										session.getSessionId(),
 										this.openviduConfig.getOpenviduRecordingAutostopTimeout());
-								this.initAutomaticRecordingStopThread(session);
+								this.initAutomaticRecordingStopThread(session, EndReason.automaticStop);
 							}
+
 							return recording;
 						}
 					} finally {
@@ -499,6 +496,22 @@ public class RecordingManager {
 		return recording;
 	}
 
+	public boolean sessionIsBeingRecordedComposed(String sessionId) {
+		if (!sessionIsBeingRecorded(sessionId)) {
+			return false;
+		} else {
+			Recording recording = this.sessionsRecordings.get(sessionId);
+			if (recording == null) {
+				recording = this.sessionsRecordingsStarting.get(sessionId);
+			}
+			if (recording != null) {
+				return RecordingProperties.IS_COMPOSED(recording.getOutputMode());
+			} else {
+				return false;
+			}
+		}
+	}
+
 	public boolean sessionIsBeingRecordedIndividual(String sessionId) {
 		if (!sessionIsBeingRecorded(sessionId)) {
 			return false;
@@ -507,7 +520,11 @@ public class RecordingManager {
 			if (recording == null) {
 				recording = this.sessionsRecordingsStarting.get(sessionId);
 			}
-			return OutputMode.INDIVIDUAL.equals(recording.getOutputMode());
+			if (recording != null) {
+				return OutputMode.INDIVIDUAL.equals(recording.getOutputMode());
+			} else {
+				return false;
+			}
 		}
 	}
 
@@ -656,7 +673,7 @@ public class RecordingManager {
 		return recordingManagerUtils.getRecordingUrl(recording);
 	}
 
-	public void initAutomaticRecordingStopThread(final Session session) {
+	public void initAutomaticRecordingStopThread(final Session session, final EndReason reason) {
 		final String recordingId = this.sessionsRecordings.get(session.getSessionId()).getId();
 
 		this.automaticRecordingStopThreads.computeIfAbsent(session.getSessionId(), f -> {
@@ -673,14 +690,12 @@ public class RecordingManager {
 								if (session.isClosed()) {
 									return;
 								}
-								if (session.getParticipants().size() == 0
-										|| session.onlyRecorderAndOrSttParticipant()) {
-									// Close session if there are no participants connected (RECORDER or STT do not
-									// count) and publishing
+								if (session.onlyRecorderAndOrSttAndOrBroadcastParticipant()) {
+									// Close session if there are no participants connected (RECORDER/STT/BROADCAST
+									// do not count) and publishing
 									log.info("Closing session {} after automatic stop of recording {}",
 											session.getSessionId(), recordingId);
-									sessionManager.closeSessionAndEmptyCollections(session, EndReason.automaticStop,
-											true);
+									sessionManager.closeSessionAndEmptyCollections(session, reason, true);
 								} else {
 									// There are users connected, but no one is publishing
 									// We don't need the lock if session is not closing
@@ -689,7 +704,7 @@ public class RecordingManager {
 									log.info(
 											"Automatic stopping recording {}. There are users connected to session {}, but no one is publishing",
 											recordingId, session.getSessionId());
-									this.stopRecording(session, recordingId, EndReason.automaticStop);
+									this.stopRecording(session, recordingId, reason);
 								}
 							} finally {
 								if (!alreadyUnlocked) {
@@ -721,33 +736,38 @@ public class RecordingManager {
 		ScheduledFuture<?> future = this.automaticRecordingStopThreads.remove(session.getSessionId());
 		if (future != null) {
 			boolean cancelled = future.cancel(false);
-			try {
-				if (session.closingLock.writeLock().tryLock(15, TimeUnit.SECONDS)) {
-					try {
-						if (session.isClosed()) {
-							return false;
-						}
-						if (session.getParticipants().size() == 0 || session.onlyRecorderAndOrSttParticipant()) {
-							// Close session if there are no participants connected (except for RECORDER or
-							// STT). This code will only be executed if recording is manually stopped during
-							// the automatic stop timeout, so the session must be also closed
+			if (session.onlyRecorderAndOrSttAndOrBroadcastParticipant()) {
+				// Close session if there are no participants connected (except for
+				// RECORDER/STT/BROADCAST). This code will only be executed if recording is
+				// manually stopped during the automatic stop timeout, so the session must be
+				// also closed
+				try {
+					if (session.closingLock.writeLock().tryLock(15, TimeUnit.SECONDS)) {
+						try {
+							if (!session.onlyRecorderAndOrSttAndOrBroadcastParticipant()) {
+								// Somebody connected after acquiring the lock. Cancel session close up
+								return true;
+							}
+							if (session.isClosed()) {
+								return false;
+							}
 							log.info(
 									"Ongoing recording of session {} was explicetly stopped within timeout for automatic recording stop. Closing session",
 									session.getSessionId());
 							sessionManager.closeSessionAndEmptyCollections(session, reason, false);
+						} finally {
+							session.closingLock.writeLock().unlock();
 						}
-					} finally {
-						session.closingLock.writeLock().unlock();
+					} else {
+						log.error(
+								"Timeout waiting for Session {} closing lock to be available for aborting automatic recording stop thred",
+								session.getSessionId());
 					}
-				} else {
+				} catch (InterruptedException e) {
 					log.error(
-							"Timeout waiting for Session {} closing lock to be available for aborting automatic recording stop thred",
+							"InterruptedException while waiting for Session {} closing lock to be available for aborting automatic recording stop thred",
 							session.getSessionId());
 				}
-			} catch (InterruptedException e) {
-				log.error(
-						"InterruptedException while waiting for Session {} closing lock to be available for aborting automatic recording stop thred",
-						session.getSessionId());
 			}
 			return cancelled;
 		} else {
@@ -781,7 +801,7 @@ public class RecordingManager {
 			log.info("OpenVidu Server has write permissions on recording path: {}", openviduRecordingPath);
 		}
 
-		final String testFolderPath = openviduRecordingPath + "/TEST_RECORDING_PATH_" + System.currentTimeMillis();
+		final String testFolderPath = openviduRecordingPath + "TEST_RECORDING_PATH_" + System.currentTimeMillis();
 		final String testFilePath = testFolderPath + "/TEST_RECORDING_PATH"
 				+ openviduConfig.getMediaServer().getRecordingFileExtension();
 
@@ -915,8 +935,6 @@ public class RecordingManager {
 				|| (sessionsRecordingsStarting.putIfAbsent(recording.getSessionId(), recording) != null)) {
 			log.error("Concurrent session recording initialization. Aborting this thread");
 			throw new RuntimeException("Concurrent initialization of recording " + recording.getId());
-		} else {
-			this.sessionHandler.storeRecordingToSendClientEvent(recording);
 		}
 	}
 

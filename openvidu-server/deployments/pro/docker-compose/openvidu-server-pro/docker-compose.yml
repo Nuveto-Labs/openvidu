@@ -11,7 +11,7 @@
 #
 #    This file will be overridden when update OpenVidu Platform
 #
-#    Openvidu Version: 2.24.0
+#    Openvidu Version: 2.29.0
 #
 #    Installation Mode: On Premises
 #
@@ -22,7 +22,7 @@ version: '3.1'
 services:
 
     openvidu-server:
-        image: openvidu/openvidu-server-pro:2.24.0
+        image: openvidu/openvidu-server-pro:2.29.0
         restart: on-failure
         network_mode: host
         entrypoint: ['/usr/local/bin/entrypoint.sh']
@@ -43,6 +43,7 @@ services:
             - COTURN_IP=${COTURN_IP:-auto-ipv4}
             - COTURN_PORT=${COTURN_PORT:-3478}
             - OPENVIDU_PRO_CLUSTER=true
+            - OPENVIDU_PRO_ELASTICSEARCH=${OPENVIDU_PRO_ELASTICSEARCH:-true}
             - OPENVIDU_PRO_KIBANA_HOST=${OPENVIDU_PRO_KIBANA_HOST:-http://127.0.0.1/kibana}
             - OPENVIDU_PRO_ELASTICSEARCH_HOST=${OPENVIDU_PRO_ELASTICSEARCH_HOST:-http://127.0.0.1:9200}
             - WAIT_KIBANA_URL=${OPENVIDU_PRO_KIBANA_HOST:-http://127.0.0.1/kibana}
@@ -55,7 +56,7 @@ services:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
 
     coturn:
-        image: openvidu/openvidu-coturn:2.24.0
+        image: openvidu/openvidu-coturn:2.29.0
         restart: on-failure
         network_mode: host
         env_file:
@@ -78,7 +79,7 @@ services:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
 
     nginx:
-        image: openvidu/openvidu-proxy:2.24.0
+        image: openvidu/openvidu-proxy:2.29.0
         restart: always
         network_mode: host
         volumes:
@@ -159,6 +160,22 @@ services:
             - /proc:/hostfs/proc:ro
             - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
             - /:/hostfs:ro
+        entrypoint: >
+            /bin/bash -c 'if [[ $${OPENVIDU_PRO_ELASTICSEARCH_HOST} =~ ^(https?://)?([^:/]+)(:([0-9]+))?(/.*)?$$ ]]; then
+                ES_PROTO=$${BASH_REMATCH[1]}
+                ES_HOST=$${BASH_REMATCH[2]}
+                ES_PORT=$${BASH_REMATCH[4]}
+                ES_PATH=$${BASH_REMATCH[5]}
+                if [[ $$ES_PROTO == "https://" ]] && [[ -z $$ES_PORT ]]; then
+                    ES_PORT=443
+                elif [[ $$ES_PROTO == "http://" ]] && [[ -z $$ES_PORT ]]; then
+                    ES_PORT=80
+                fi
+                export OPENVIDU_PRO_ELASTICSEARCH_HOST=$${ES_PROTO}$${ES_HOST}:$${ES_PORT}$${ES_PATH}
+            else
+                exit 1
+            fi;
+            exec /bin/bash -c "$$@"'
         command: >
             /bin/bash -c "metricbeat -e -strict.perms=false -e -system.hostfs=/hostfs
             `if [ ! -z $ELASTICSEARCH_USERNAME ]; then echo '-E output.elasticsearch.username=$ELASTICSEARCH_USERNAME'; fi`
@@ -180,6 +197,22 @@ services:
             - ./beats/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
             - /var/lib/docker:/var/lib/docker:ro
             - /var/run/docker.sock:/var/run/docker.sock
+        entrypoint: >
+            /bin/bash -c 'if [[ $${OPENVIDU_PRO_ELASTICSEARCH_HOST} =~ ^(https?://)?([^:/]+)(:([0-9]+))?(/.*)?$$ ]]; then
+                ES_PROTO=$${BASH_REMATCH[1]}
+                ES_HOST=$${BASH_REMATCH[2]}
+                ES_PORT=$${BASH_REMATCH[4]}
+                ES_PATH=$${BASH_REMATCH[5]}
+                if [[ $$ES_PROTO == "https://" ]] && [[ -z $$ES_PORT ]]; then
+                    ES_PORT=443
+                elif [[ $$ES_PROTO == "http://" ]] && [[ -z $$ES_PORT ]]; then
+                    ES_PORT=80
+                fi
+                export OPENVIDU_PRO_ELASTICSEARCH_HOST=$${ES_PROTO}$${ES_HOST}:$${ES_PORT}$${ES_PATH}
+            else
+                exit 1
+            fi;
+            exec /bin/bash -c "$$@"'
         command: >
             /bin/bash -c "filebeat -e -strict.perms=false
             `if [ ! -z $ELASTICSEARCH_USERNAME ]; then echo '-E output.elasticsearch.username=$ELASTICSEARCH_USERNAME'; fi`

@@ -56,7 +56,6 @@ export class WebRtcPeer {
     protected configuration: Required<WebRtcPeerConfiguration>;
 
     private iceCandidateList: RTCIceCandidate[] = [];
-    private candidategatheringdone = false;
 
     constructor(configuration: WebRtcPeerConfiguration) {
         platform = PlatformUtils.getInstance();
@@ -91,12 +90,16 @@ export class WebRtcPeer {
             }
         });
 
-        this.pc.addEventListener('signalingstatechange', () => {
+        this.pc.addEventListener('signalingstatechange', async () => {
             if (this.pc.signalingState === 'stable') {
                 // SDP Offer/Answer finished. Add stored remote candidates.
                 while (this.iceCandidateList.length > 0) {
                     let candidate = this.iceCandidateList.shift();
-                    this.pc.addIceCandidate(<RTCIceCandidate>candidate);
+                    try {
+                        await this.pc.addIceCandidate(<RTCIceCandidate>candidate);
+                    } catch (error) {
+                        logger.error('Error when calling RTCPeerConnection#addIceCandidate for RTCPeerConnection ' + this.getId(), error);
+                    }
                 }
             }
         });
@@ -380,7 +383,7 @@ export class WebRtcPeer {
                         offerToReceiveAudio: offerAudio,
                         offerToReceiveVideo: offerVideo
                     };
-                    this.pc!.createAnswer(constraints)
+                    (this.pc as RTCPeerConnection).createAnswer(constraints)
                         .then((sdpAnswer) => resolve(sdpAnswer))
                         .catch((error) => reject(error));
                 }

@@ -1,8 +1,8 @@
-import { Component, OnInit, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { PanelType } from '../../../models/panel.model';
+import { PanelEvent, PanelType } from '../../../models/panel.model';
 import { OpenViduAngularConfigService } from '../../../services/config/openvidu-angular.config.service';
-import { PanelEvent, PanelService } from '../../../services/panel/panel.service';
+import { PanelService } from '../../../services/panel/panel.service';
 
 @Component({
 	selector: 'ov-activities-panel',
@@ -13,7 +13,7 @@ import { PanelEvent, PanelService } from '../../../services/panel/panel.service'
 export class ActivitiesPanelComponent implements OnInit {
 	/**
 	 * Provides event notifications that fire when start recording button has been clicked.
-	 * The recording should be stated using the OpenVidu REST API.
+	 * The recording should be started using the OpenVidu REST API.
 	 */
 	@Output() onStartRecordingClicked: EventEmitter<void> = new EventEmitter<void>();
 
@@ -29,6 +29,24 @@ export class ActivitiesPanelComponent implements OnInit {
 	 */
 	@Output() onDeleteRecordingClicked: EventEmitter<string> = new EventEmitter<string>();
 
+	/**
+	 * Provides event notifications that fire when a participant needs update the recordings information
+	 * (usually when recording is stopped by the session moderator or recording panel is opened).
+	 * The recordings should be updated using the REST API.
+	 */
+	@Output() onForceRecordingUpdate: EventEmitter<void> = new EventEmitter<void>();
+
+	/**
+	 * Provides event notifications that fire when start broadcasting button has been clicked.
+	 * The broadcasting should be started using the REST API.
+	 */
+	@Output() onStartBroadcastingClicked: EventEmitter<string> = new EventEmitter<string>();
+
+	/**
+	 * Provides event notifications that fire when stop broadcasting button has been clicked.
+	 * The broadcasting should be stopped using the REST API.
+	 */
+	@Output() onStopBroadcastingClicked: EventEmitter<void> = new EventEmitter<void>();
 
 	/**
 	 * @internal
@@ -38,8 +56,10 @@ export class ActivitiesPanelComponent implements OnInit {
 	 * @internal
 	 */
 	showRecordingActivity: boolean = true;
+	showBroadcastingActivity: boolean = true;
 	private panelSubscription: Subscription;
 	private recordingActivitySub: Subscription;
+	private broadcastingActivitySub: Subscription;
 
 	/**
 	 * @internal
@@ -60,6 +80,7 @@ export class ActivitiesPanelComponent implements OnInit {
 	ngOnDestroy() {
 		if (this.panelSubscription) this.panelSubscription.unsubscribe();
 		if (this.recordingActivitySub) this.recordingActivitySub.unsubscribe();
+		if (this.broadcastingActivitySub) this.broadcastingActivitySub.unsubscribe();
 	}
 
 	/**
@@ -90,19 +111,34 @@ export class ActivitiesPanelComponent implements OnInit {
 		this.onDeleteRecordingClicked.emit(recordingId);
 	}
 
+	_onStartBroadcastingClicked(broadcastUrl: string) {
+		this.onStartBroadcastingClicked.emit(broadcastUrl);
+	}
+
+	_onStopBroadcastingClicked() {
+		this.onStopBroadcastingClicked.emit();
+	}
+
+	_onForceRecordingUpdate() {
+		this.onForceRecordingUpdate.emit();
+	}
+
 	private subscribeToPanelToggling() {
-		this.panelSubscription = this.panelService.panelOpenedObs.subscribe(
-			(ev: PanelEvent) => {
-				if (ev.type === PanelType.ACTIVITIES && !!ev.expand) {
-					this.expandedPanel = ev.expand;
-				}
+		this.panelSubscription = this.panelService.panelOpenedObs.subscribe((ev: PanelEvent) => {
+			if (ev.type === PanelType.ACTIVITIES && !!ev.expand) {
+				this.expandedPanel = ev.expand;
 			}
-		);
+		});
 	}
 
 	private subscribeToActivitiesPanelDirective() {
 		this.recordingActivitySub = this.libService.recordingActivity.subscribe((value: boolean) => {
 			this.showRecordingActivity = value;
+			this.cd.markForCheck();
+		});
+
+		this.broadcastingActivitySub = this.libService.broadcastingActivity.subscribe((value: boolean) => {
+			this.showBroadcastingActivity = value;
 			this.cd.markForCheck();
 		});
 	}

@@ -1,54 +1,41 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 LABEL maintainer="info@openvidu.io"
 
 USER root
 
-RUN apt-get update && apt-get -y upgrade 
-
-RUN apt-get install -y \
-    software-properties-common \ 
+RUN apt-get update && apt-get -y upgrade && \
+    apt-get install -y --no-install-recommends apt-utils && \
+    apt-get install -y \
+    apt-transport-https \
     ca-certificates \
     curl \
+    ffmpeg \
+    git \
     gnupg \
-    lsb-release && \
-    apt-get install -y --no-install-recommends apt-utils
+    iproute2 \
+    lsb-release \
+    maven \
+    openjdk-11-jdk-headless \
+    rsync \
+    software-properties-common \
+    sudo && \
+    # Node
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    NODE_MAJOR=20 && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && apt-get install nodejs -y && \
+    # Node
+    npm install -g http-server@latest && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get autoremove --purge -y && apt-get autoclean
 
-# Install Node
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - && apt-get install -y nodejs
-
-# Java 11
-RUN apt-get install -y openjdk-11-jdk-headless
-
-# Maven
-RUN apt-get install -y maven
-
-# git
-RUN apt-get install -y git
-
-# http-server
-RUN npm install -g http-server@latest
-
-# sudo
-RUN apt-get -y install sudo
-
-# ffmpeg (for ffprobe)
-RUN apt-get install -y ffmpeg
-
-# docker
-RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu focal stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
-    apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
-
-# docker-compose
-RUN apt-get update && apt-get install docker-compose-plugin && \
-    curl -fL https://github.com/docker/compose-switch/releases/latest/download/docker-compose-linux-amd64 -o /usr/local/bin/compose-switch && \
-    chmod +x /usr/local/bin/compose-switch && \
-    update-alternatives --install /usr/local/bin/docker-compose docker-compose /usr/local/bin/compose-switch 99
-
-# Cleanup
-RUN rm -rf /var/lib/apt/lists/*
-RUN apt-get autoremove --purge -y && apt-get autoclean
+# Docker
+RUN sudo mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 COPY entrypoint.sh /entrypoint.sh
 RUN ["chmod", "+x", "/entrypoint.sh"]

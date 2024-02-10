@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -49,7 +50,6 @@ import io.openvidu.client.internal.ProtocolElements;
 import io.openvidu.java.client.ConnectionProperties;
 import io.openvidu.java.client.ConnectionType;
 import io.openvidu.java.client.OpenViduRole;
-import io.openvidu.java.client.utils.FormatChecker;
 import io.openvidu.server.config.OpenviduBuildInfo;
 import io.openvidu.server.config.OpenviduConfig;
 import io.openvidu.server.core.EndReason;
@@ -83,6 +83,11 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 	RpcNotificationService notificationService;
 
 	private ConcurrentMap<String, Boolean> webSocketEOFTransportError = new ConcurrentHashMap<>();
+
+	@PostConstruct
+	public void init() {
+		notificationService.setRpcHandler(this);
+	}
 
 	@Override
 	public void handleRequest(Transaction transaction, Request<JsonObject> request) throws Exception {
@@ -304,7 +309,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 		if (tokenObj != null) {
 
 			String clientMetadata = getStringParam(request, ProtocolElements.JOINROOM_METADATA_PARAM);
-			if (FormatChecker.isServerMetadataFormatCorrect(clientMetadata)) {
+			if (io.openvidu.java.client.Utils.isServerMetadataFormatCorrect(clientMetadata)) {
 
 				// While closing a session users can't join
 				if (session.closingLock.readLock().tryLock()) {
@@ -786,7 +791,9 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 		String rpcSessionId = rpcSession.getSessionId();
 		String message = "";
 
-		if ("Close for not receive ping from client".equals(status)) {
+		if ("Connection closed for reconnection".equals(status)) {
+			message = "Evicting ghost reconnection participant with private id {}";
+		} else if ("Close for not receive ping from client".equals(status)) {
 			message = "Evicting participant with private id {} because of a network disconnection";
 		} else if (status == null) { // && this.webSocketBrokenPipeTransportError.remove(rpcSessionId) != null)) {
 			try {
@@ -811,7 +818,7 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 
 		if (this.webSocketEOFTransportError.remove(rpcSessionId) != null) {
 			log.warn(
-					"Evicting participant with private id {} because a transport error took place and its web socket connection is now closed",
+					"Evicting participant with private id {} because a transport error took place and its websocket connection is now closed",
 					rpcSession.getSessionId());
 			this.leaveRoomAfterConnClosed(rpcSessionId, EndReason.networkDisconnect);
 		}
@@ -942,12 +949,21 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 		try {
 			new VersionComparator().checkVersionCompatibility(clientVersion, serverVersion);
 		} catch (VersionMismatchException e) {
+
+			String outdatedModule = null;
+			if (participant.isRecorderParticipant())
+				outdatedModule = "COMPOSED recording layout";
+			else if (participant.isBroadcastParticipant())
+				outdatedModule = "broadcasting layout";
+			else if (participant.isSttParticipant())
+				outdatedModule = "Speech To Text module";
+
 			if (e.isIncompatible()) {
 
-				if (participant.isRecorderParticipant()) {
+				if (participant.isRecorderOrSttOrBroadcastParticipant()) {
 					log.error(
-							"The COMPOSED recording layout is using an incompatible version of openvidu-browser SDK ({}) for this OpenVidu deployment ({}). This may cause the system to malfunction",
-							clientVersion, serverVersion);
+							"The {} is using an incompatible version of openvidu-browser SDK ({}) for this OpenVidu deployment ({}). This may cause the system to malfunction",
+							outdatedModule, clientVersion, serverVersion);
 				} else {
 					log.error(
 							"Participant {}{}{} has an incompatible version of openvidu-browser SDK ({}) for this OpenVidu deployment ({}). This may cause the system to malfunction",
@@ -963,12 +979,13 @@ public class RpcHandler extends DefaultJsonRpcHandler<JsonObject> {
 			} else {
 				DefaultArtifactVersion v = new DefaultArtifactVersion(serverVersion);
 
-				if (participant.isRecorderParticipant()) {
+				if (participant.isRecorderOrSttOrBroadcastParticipant()) {
+
 					log.warn(
-							"The COMPOSED recording layout has an older version of openvidu-browser SDK ({}) for this OpenVidu deployment ({}). These versions are still compatible with each other, "
-									+ "but client SDK must be updated as soon as possible to {}.x. This recording layout using openvidu-browser {} will become incompatible with the next release of openvidu-server",
-							clientVersion, serverVersion, (v.getMajorVersion() + "." + v.getMinorVersion()),
-							clientVersion);
+							"The {} has an older version of openvidu-browser SDK ({}) for this OpenVidu deployment ({}). These versions are still compatible with each other, "
+									+ "but client SDK must be updated as soon as possible to {}.x. This {} using openvidu-browser {} will become incompatible with the next release of openvidu-server",
+							outdatedModule, clientVersion, serverVersion,
+							(v.getMajorVersion() + "." + v.getMinorVersion()), outdatedModule, clientVersion);
 				} else {
 					log.warn(
 							"Participant {} with IP {} and platform {} has an older version of openvidu-browser SDK ({}) for this OpenVidu deployment ({}). "

@@ -63,7 +63,7 @@ let platform: PlatformUtils;
 
 /**
  * Entrypoint of OpenVidu Browser library.
- * Use it to initialize objects of type [[Session]], [[Publisher]] and [[LocalRecorder]]
+ * Use it to initialize objects of type {@link Session}, {@link Publisher} and {@link LocalRecorder}
  */
 export class OpenVidu {
     private jsonRpcClient: any;
@@ -191,18 +191,18 @@ export class OpenVidu {
      *
      * #### Events dispatched
      *
-     * The [[Publisher]] object will dispatch an `accessDialogOpened` event, only if the pop-up shown by the browser to request permissions for the camera is opened. You can use this event to alert the user about granting permissions
+     * The {@link Publisher} object will dispatch an `accessDialogOpened` event, only if the pop-up shown by the browser to request permissions for the camera is opened. You can use this event to alert the user about granting permissions
      * for your website. An `accessDialogClosed` event will also be dispatched after user clicks on "Allow" or "Block" in the pop-up.
      *
-     * The [[Publisher]] object will dispatch an `accessAllowed` or `accessDenied` event once it has been granted access to the requested input devices or not.
+     * The {@link Publisher} object will dispatch an `accessAllowed` or `accessDenied` event once it has been granted access to the requested input devices or not.
      *
-     * The [[Publisher]] object will dispatch a `videoElementCreated` event once a HTML video element has been added to DOM (only if you
-     * [let OpenVidu take care of the video players](/en/stable/cheatsheet/manage-videos/#let-openvidu-take-care-of-the-video-players)). See [[VideoElementEvent]] to learn more.
+     * The {@link Publisher} object will dispatch a `videoElementCreated` event once a HTML video element has been added to DOM (only if you
+     * [let OpenVidu take care of the video players](/en/stable/cheatsheet/manage-videos/#let-openvidu-take-care-of-the-video-players)). See {@link VideoElementEvent} to learn more.
      *
-     * The [[Publisher]] object will dispatch a `streamPlaying` event once the local streams starts playing. See [[StreamManagerEvent]] to learn more.
+     * The {@link Publisher} object will dispatch a `streamPlaying` event once the local streams starts playing. See {@link StreamManagerEvent} to learn more.
      *
-     * @param targetElement  HTML DOM element (or its `id` attribute) in which the video element of the Publisher will be inserted (see [[PublisherProperties.insertMode]]). If *null* or *undefined* no default video will be created for this Publisher.
-     * You can always call method [[Publisher.addVideoElement]] or [[Publisher.createVideoElement]] to manage the video elements on your own (see [Manage video players](/en/stable/cheatsheet/manage-videos) section)
+     * @param targetElement  HTML DOM element (or its `id` attribute) in which the video element of the Publisher will be inserted (see {@link PublisherProperties.insertMode}). If *null* or *undefined* no default video will be created for this Publisher.
+     * You can always call method {@link Publisher.addVideoElement} or {@link Publisher.createVideoElement} to manage the video elements on your own (see [Manage video players](/en/stable/cheatsheet/manage-videos) section)
      * @param completionHandler `error` parameter is null if `initPublisher` succeeds, and is defined if it fails.
      *                          `completionHandler` function is called before the Publisher dispatches an `accessAllowed` or an `accessDenied` event
      */
@@ -282,9 +282,9 @@ export class OpenVidu {
     }
 
     /**
-     * Promisified version of [[OpenVidu.initPublisher]]
+     * Promisified version of {@link OpenVidu.initPublisher}
      *
-     * > WARNING: events `accessDialogOpened` and `accessDialogClosed` will not be dispatched if using this method instead of [[OpenVidu.initPublisher]]
+     * > WARNING: events `accessDialogOpened` and `accessDialogClosed` will not be dispatched if using this method instead of {@link OpenVidu.initPublisher}
      */
     initPublisherAsync(targetElement: string | HTMLElement | undefined): Promise<Publisher>;
     initPublisherAsync(targetElement: string | HTMLElement | undefined, properties: PublisherProperties): Promise<Publisher>;
@@ -348,7 +348,9 @@ export class OpenVidu {
             platform.isSafariBrowser() ||
             platform.isAndroidBrowser() || // Android WebView & Ionic apps for Android
             platform.isElectron() ||
-            platform.isNodeJs()
+            platform.isNodeJs() ||
+            // TODO: remove when updating platform detection library
+            platform.isMotorolaEdgeDevice()
         );
     }
 
@@ -361,7 +363,7 @@ export class OpenVidu {
     }
 
     /**
-     * Collects information about the media input devices available on the system. You can pass property `deviceId` of a [[Device]] object as value of `audioSource` or `videoSource` properties in [[initPublisher]] method
+     * Collects information about the media input devices available on the system. You can pass property `deviceId` of a {@link Device} object as value of `audioSource` or `videoSource` properties in {@link initPublisher} method
      */
     getDevices(): Promise<Device[]> {
         return new Promise<Device[]>((resolve, reject) => {
@@ -466,9 +468,9 @@ export class OpenVidu {
     }
 
     /**
-     * Get a MediaStream object that you can customize before calling [[initPublisher]] (pass _MediaStreamTrack_ property of the _MediaStream_ value resolved by the Promise as `audioSource` or `videoSource` properties in [[initPublisher]])
+     * Get a MediaStream object that you can customize before calling {@link initPublisher} (pass _MediaStreamTrack_ property of the _MediaStream_ value resolved by the Promise as `audioSource` or `videoSource` properties in {@link initPublisher})
      *
-     * Parameter `options` is the same as in [[initPublisher]] second parameter (of type [[PublisherProperties]]), but only the following properties will be applied: `audioSource`, `videoSource`, `frameRate`, `resolution`
+     * Parameter `options` is the same as in {@link initPublisher} second parameter (of type {@link PublisherProperties}), but only the following properties will be applied: `audioSource`, `videoSource`, `frameRate`, `resolution`
      *
      * To customize the Publisher's video, the API for HTMLCanvasElement is very useful. For example, to get a black-and-white video at 10 fps and HD resolution with no sound:
      * ```
@@ -512,107 +514,104 @@ export class OpenVidu {
      * });
      * ```
      */
-    getUserMedia(options: PublisherProperties): Promise<MediaStream> {
-        return new Promise<MediaStream>(async (resolve, reject) => {
-            const askForAudioStreamOnly = async (previousMediaStream: MediaStream, constraints: MediaStreamConstraints) => {
-                const definedAudioConstraint = constraints.audio === undefined ? true : constraints.audio;
-                const constraintsAux: MediaStreamConstraints = { audio: definedAudioConstraint, video: false };
-                try {
-                    const audioOnlyStream = await navigator.mediaDevices.getUserMedia(constraintsAux);
-                    previousMediaStream.addTrack(audioOnlyStream.getAudioTracks()[0]);
-                    return resolve(previousMediaStream);
-                } catch (error) {
-                    previousMediaStream.getAudioTracks().forEach((track) => {
-                        track.stop();
-                    });
-                    previousMediaStream.getVideoTracks().forEach((track) => {
-                        track.stop();
-                    });
-                    return reject(this.generateAudioDeviceError(error, constraintsAux));
-                }
-            };
-
+    async getUserMedia(options: PublisherProperties): Promise<MediaStream> {
+        const askForAudioStreamOnly = async (previousMediaStream: MediaStream, constraints: MediaStreamConstraints) => {
+            const definedAudioConstraint = constraints.audio === undefined ? true : constraints.audio;
+            const constraintsAux: MediaStreamConstraints = { audio: definedAudioConstraint, video: false };
             try {
-                const myConstraints = await this.generateMediaConstraints(options);
-                if (
-                    (!!myConstraints.videoTrack && !!myConstraints.audioTrack) ||
-                    (!!myConstraints.audioTrack && myConstraints.constraints?.video === false) ||
-                    (!!myConstraints.videoTrack && myConstraints.constraints?.audio === false)
-                ) {
-                    // No need to call getUserMedia at all. Both tracks provided, or only AUDIO track provided or only VIDEO track provided
-                    return resolve(this.addAlreadyProvidedTracks(myConstraints, new MediaStream()));
-                } else {
-                    // getUserMedia must be called. AUDIO or VIDEO are requesting a new track
+                const audioOnlyStream = await navigator.mediaDevices.getUserMedia(constraintsAux);
+                previousMediaStream.addTrack(audioOnlyStream.getAudioTracks()[0]);
+                return previousMediaStream;
+            } catch (error) {
+                previousMediaStream.getAudioTracks().forEach((track) => {
+                    track.stop();
+                });
+                previousMediaStream.getVideoTracks().forEach((track) => {
+                    track.stop();
+                });
+                throw this.generateAudioDeviceError(error, constraintsAux);
+            }
+        };
 
-                    // Delete already provided constraints for audio or video
-                    if (!!myConstraints.videoTrack) {
-                        delete myConstraints.constraints!.video;
-                    }
-                    if (!!myConstraints.audioTrack) {
-                        delete myConstraints.constraints!.audio;
-                    }
+        try {
+            const myConstraints = await this.generateMediaConstraints(options);
+            if (
+                (!!myConstraints.videoTrack && !!myConstraints.audioTrack) ||
+                (!!myConstraints.audioTrack && myConstraints.constraints?.video === false) ||
+                (!!myConstraints.videoTrack && myConstraints.constraints?.audio === false)
+            ) {
+                // No need to call getUserMedia at all. Both tracks provided, or only AUDIO track provided or only VIDEO track provided
+                return this.addAlreadyProvidedTracks(myConstraints, new MediaStream());
+            } else {
+                // getUserMedia must be called. AUDIO or VIDEO are requesting a new track
 
-                    let mustAskForAudioTrackLater = false;
-                    if (typeof options.videoSource === 'string') {
-                        // Video is deviceId or screen sharing
-                        if (
-                            options.videoSource === 'screen' ||
-                            options.videoSource === 'window' ||
-                            (platform.isElectron() && options.videoSource.startsWith('screen:'))
-                        ) {
-                            // Video is screen sharing
-                            mustAskForAudioTrackLater =
-                                !myConstraints.audioTrack && options.audioSource !== null && options.audioSource !== false;
-                            if (navigator.mediaDevices['getDisplayMedia'] && !platform.isElectron()) {
-                                // getDisplayMedia supported
-                                try {
-                                    const mediaStream = await navigator.mediaDevices['getDisplayMedia']({ video: true });
-                                    this.addAlreadyProvidedTracks(myConstraints, mediaStream);
-                                    if (mustAskForAudioTrackLater) {
-                                        await askForAudioStreamOnly(mediaStream, <MediaStreamConstraints>myConstraints.constraints);
-                                        return;
-                                    } else {
-                                        return resolve(mediaStream);
-                                    }
-                                } catch (error) {
-                                    let errorName: OpenViduErrorName = OpenViduErrorName.SCREEN_CAPTURE_DENIED;
-                                    const errorMessage = error.toString();
-                                    return reject(new OpenViduError(errorName, errorMessage));
+                // Delete already provided constraints for audio or video
+                if (!!myConstraints.videoTrack) {
+                    delete myConstraints.constraints!.video;
+                }
+                if (!!myConstraints.audioTrack) {
+                    delete myConstraints.constraints!.audio;
+                }
+
+                let mustAskForAudioTrackLater = false;
+                if (typeof options.videoSource === 'string') {
+                    // Video is deviceId or screen sharing
+                    if (
+                        options.videoSource === 'screen' ||
+                        options.videoSource === 'window' ||
+                        (platform.isElectron() && options.videoSource.startsWith('screen:'))
+                    ) {
+                        // Video is screen sharing
+                        mustAskForAudioTrackLater =
+                            !myConstraints.audioTrack && options.audioSource !== null && options.audioSource !== false;
+                        if (navigator.mediaDevices['getDisplayMedia'] && !platform.isElectron()) {
+                            // getDisplayMedia supported
+                            try {
+                                const mediaStream = await navigator.mediaDevices['getDisplayMedia']({ video: true, audio: options.audioSource === 'screen' });
+                                this.addAlreadyProvidedTracks(myConstraints, mediaStream);
+                                if (mustAskForAudioTrackLater) {
+                                    return await askForAudioStreamOnly(mediaStream, <MediaStreamConstraints>myConstraints.constraints);
+                                } else {
+                                    return mediaStream;
                                 }
-                            } else {
-                                // getDisplayMedia NOT supported. Can perform getUserMedia below with already calculated constraints
+                            } catch (error) {
+                                let errorName: OpenViduErrorName = OpenViduErrorName.SCREEN_CAPTURE_DENIED;
+                                const errorMessage = error.toString();
+                                throw new OpenViduError(errorName, errorMessage);
                             }
                         } else {
-                            // Video is deviceId. Can perform getUserMedia below with already calculated constraints
+                            // getDisplayMedia NOT supported. Can perform getUserMedia below with already calculated constraints
                         }
-                    }
-                    // Use already calculated constraints
-                    const constraintsAux = mustAskForAudioTrackLater
-                        ? { video: myConstraints.constraints!.video }
-                        : myConstraints.constraints;
-                    try {
-                        const mediaStream = await navigator.mediaDevices.getUserMedia(constraintsAux);
-                        this.addAlreadyProvidedTracks(myConstraints, mediaStream);
-                        if (mustAskForAudioTrackLater) {
-                            await askForAudioStreamOnly(mediaStream, <MediaStreamConstraints>myConstraints.constraints);
-                        } else {
-                            return resolve(mediaStream);
-                        }
-                    } catch (error) {
-                        let errorName: OpenViduErrorName;
-                        const errorMessage = error.toString();
-                        if (!(options.videoSource === 'screen')) {
-                            errorName = OpenViduErrorName.DEVICE_ACCESS_DENIED;
-                        } else {
-                            errorName = OpenViduErrorName.SCREEN_CAPTURE_DENIED;
-                        }
-                        return reject(new OpenViduError(errorName, errorMessage));
+                    } else {
+                        // Video is deviceId. Can perform getUserMedia below with already calculated constraints
                     }
                 }
-            } catch (error) {
-                reject(error);
+                // Use already calculated constraints
+                const constraintsAux = mustAskForAudioTrackLater
+                    ? { video: myConstraints.constraints!.video }
+                    : myConstraints.constraints;
+                try {
+                    const mediaStream = await navigator.mediaDevices.getUserMedia(constraintsAux);
+                    this.addAlreadyProvidedTracks(myConstraints, mediaStream);
+                    if (mustAskForAudioTrackLater) {
+                        return await askForAudioStreamOnly(mediaStream, <MediaStreamConstraints>myConstraints.constraints);
+                    } else {
+                        return mediaStream;
+                    }
+                } catch (error) {
+                    let errorName: OpenViduErrorName;
+                    const errorMessage = error.toString();
+                    if (!(options.videoSource === 'screen')) {
+                        errorName = OpenViduErrorName.DEVICE_ACCESS_DENIED;
+                    } else {
+                        errorName = OpenViduErrorName.SCREEN_CAPTURE_DENIED;
+                    }
+                    throw new OpenViduError(errorName, errorMessage);
+                }
             }
-        });
+        } catch (error) {
+            throw error;
+        }
     }
 
     /* tslint:disable:no-empty */
@@ -625,7 +624,7 @@ export class OpenVidu {
     /* tslint:enable:no-empty */
 
     /**
-     * Set OpenVidu advanced configuration options. `configuration` is an object of type [[OpenViduAdvancedConfiguration]]. Call this method to override previous values at any moment.
+     * Set OpenVidu advanced configuration options. `configuration` is an object of type {@link OpenViduAdvancedConfiguration}. Call this method to override previous values at any moment.
      */
     setAdvancedConfiguration(configuration: OpenViduAdvancedConfiguration): void {
         this.advancedConfiguration = configuration;
@@ -866,6 +865,8 @@ export class OpenVidu {
                 participantEvicted: this.session.onParticipantEvicted.bind(this.session),
                 recordingStarted: this.session.onRecordingStarted.bind(this.session),
                 recordingStopped: this.session.onRecordingStopped.bind(this.session),
+                broadcastStarted: this.session.onBroadcastStarted.bind(this.session),
+                broadcastStopped: this.session.onBroadcastStopped.bind(this.session),
                 sendMessage: this.session.onNewMessage.bind(this.session),
                 streamPropertyChanged: this.session.onStreamPropertyChanged.bind(this.session),
                 connectionPropertyChanged: this.session.onConnectionPropertyChanged.bind(this.session),
@@ -988,7 +989,7 @@ export class OpenVidu {
     /**
      * @hidden
      */
-    addAlreadyProvidedTracks(myConstraints: CustomMediaStreamConstraints, mediaStream: MediaStream, stream?: Stream) {
+    addAlreadyProvidedTracks(myConstraints: CustomMediaStreamConstraints, mediaStream: MediaStream, stream?: Stream): MediaStream {
         if (!!myConstraints.videoTrack) {
             mediaStream.addTrack(myConstraints.videoTrack);
             if (!!stream) {
@@ -1016,13 +1017,17 @@ export class OpenVidu {
     ) {
         const audioSource = publisherProperties.audioSource;
         const videoSource = publisherProperties.videoSource;
-        if (typeof audioSource === 'string') {
+        if (typeof audioSource === 'string' && audioSource !== 'screen') {
             myConstraints.constraints!.audio = { deviceId: { exact: audioSource } };
         }
 
         if (typeof videoSource === 'string') {
             if (!this.isScreenShare(videoSource)) {
                 this.setVideoSource(myConstraints, videoSource);
+                if (audioSource === 'screen') {
+                    logger.warn('Parameter "audioSource" is set to "screen", which means rquesting audio from screen sharing source. But "videoSource" is not set to "screen". No audio source will be requested');
+                    myConstraints.constraints!.audio = false;
+                }
             } else {
                 // Screen sharing
 

@@ -18,6 +18,9 @@
 package io.openvidu.java.client;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -33,39 +36,48 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
-import org.apache.http.ParseException;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.ssl.TrustStrategy;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.io.HttpClientConnectionManager;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.apache.hc.core5.ssl.TrustStrategy;
+import org.apache.hc.core5.util.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
 public class OpenVidu {
 
 	private static final Logger log = LoggerFactory.getLogger(OpenVidu.class);
 
-	private String secret;
 	protected String hostname;
-	protected HttpClient httpClient;
+	protected CloseableHttpClient httpClient;
 	protected Map<String, Session> activeSessions = new ConcurrentHashMap<>();
 
 	protected final static String API_PATH = "openvidu/api";
@@ -74,23 +86,23 @@ public class OpenVidu {
 	protected final static String API_RECORDINGS = API_PATH + "/recordings";
 	protected final static String API_RECORDINGS_START = API_RECORDINGS + "/start";
 	protected final static String API_RECORDINGS_STOP = API_RECORDINGS + "/stop";
+	protected final static String API_BROADCAST = API_PATH + "/broadcast";
+	protected final static String API_BROADCAST_START = API_BROADCAST + "/start";
+	protected final static String API_BROADCAST_STOP = API_BROADCAST + "/stop";
 
 	/**
-	 * @param hostname URL where your instance of OpenVidu Server is up an running.
-	 *                 It must be the full URL (e.g.
-	 *                 <code>https://12.34.56.78:1234/</code>)
+	 * @param hostname URL where your OpenVidu deployment is up an running. It must
+	 *                 be the full URL (e.g. <code>https://12.34.56.78:1234/</code>)
 	 * 
-	 * @param secret   Secret used on OpenVidu Server initialization
+	 * @param secret   Secret configured in your OpenVidu deployment
 	 */
 	public OpenVidu(String hostname, String secret) {
 
+		testHostname(hostname);
 		this.hostname = hostname;
-
 		if (!this.hostname.endsWith("/")) {
 			this.hostname += "/";
 		}
-
-		this.secret = secret;
 
 		TrustStrategy trustStrategy = new TrustStrategy() {
 			@Override
@@ -99,25 +111,99 @@ public class OpenVidu {
 			}
 		};
 
-		CredentialsProvider provider = new BasicCredentialsProvider();
-		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("OPENVIDUAPP", this.secret);
-		provider.setCredentials(AuthScope.ANY, credentials);
+		final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+		credentialsProvider.setCredentials(new AuthScope(null, -1),
+				new UsernamePasswordCredentials("OPENVIDUAPP", secret.toCharArray()));
 
 		SSLContext sslContext;
-
 		try {
 			sslContext = new SSLContextBuilder().loadTrustMaterial(null, trustStrategy).build();
 		} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
 			throw new RuntimeException(e);
 		}
+		final SSLConnectionSocketFactory sslSocketFactory = SSLConnectionSocketFactoryBuilder.create()
+				.setHostnameVerifier(NoopHostnameVerifier.INSTANCE).setSslContext(sslContext).build();
 
-		RequestConfig.Builder requestBuilder = RequestConfig.custom();
-		requestBuilder = requestBuilder.setConnectTimeout(30000);
-		requestBuilder = requestBuilder.setConnectionRequestTimeout(30000);
+		final HttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+				.setSSLSocketFactory(sslSocketFactory).setConnectionTimeToLive(TimeValue.ofSeconds(30)).build();
 
-		this.httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestBuilder.build())
-				.setConnectionTimeToLive(30, TimeUnit.SECONDS).setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
-				.setSSLContext(sslContext).setDefaultCredentialsProvider(provider).build();
+		RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(30, TimeUnit.SECONDS)
+				.setConnectionRequestTimeout(30, TimeUnit.SECONDS).setResponseTimeout(30, TimeUnit.SECONDS).build();
+
+		this.httpClient = HttpClients.custom().setConnectionManager(connectionManager)
+				.setDefaultRequestConfig(requestConfig).setDefaultCredentialsProvider(credentialsProvider).build();
+	}
+
+	/**
+	 * @param hostname URL where your OpenVidu deployment is up an running. It must
+	 *                 be the full URL (e.g. <code>https://12.34.56.78:1234/</code>)
+	 * 
+	 * @param secret   Secret configured in your OpenVidu deployment
+	 * 
+	 * @param builder  An instance of <a href=
+	 *                 "https://hc.apache.org/httpcomponents-client-5.2.x/current/httpclient5/apidocs/org/apache/hc/client5/http/impl/classic/HttpClientBuilder.html"
+	 *                 target=
+	 *                 "_blank">org.apache.hc.client5.http.impl.classic.HttpClientBuilder</a>.
+	 *                 This overrides the internal HTTP client in use. This method
+	 *                 allows you to custom configure the HTTP client to your needs.
+	 *                 This may be interesting for many reasons, including:
+	 *                 <ul>
+	 *                 <li>Adding custom HTTP headers</li>
+	 *                 <li>Adding proxy configuration</li>
+	 *                 <li>Customizing the SSLContext</li>
+	 *                 <li>Modifying the connection timeouts</li>
+	 *                 <li>Setting up a cookie store</li>
+	 *                 </ul>
+	 *                 This method will override any <a href=
+	 *                 "https://hc.apache.org/httpcomponents-client-5.2.x/current/httpclient5/apidocs/org/apache/hc/client5/http/auth/CredentialsProvider.html"
+	 *                 target="_blank">CredentialsProvider</a> of the
+	 *                 {@code builder} with a <a href=
+	 *                 "https://hc.apache.org/httpcomponents-client-5.2.x/current/httpclient5/apidocs/org/apache/hc/client5/http/impl/auth/BasicCredentialsProvider.html"
+	 *                 target="_blank">BasicCredentialsProvider</a> built with the
+	 *                 param {@code secret}, which is the default configuration.
+	 */
+	public OpenVidu(String hostname, String secret, HttpClientBuilder builder) {
+
+		testHostname(hostname);
+		this.hostname = hostname;
+		if (!this.hostname.endsWith("/")) {
+			this.hostname += "/";
+		}
+
+		final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+		credentialsProvider.setCredentials(new AuthScope(null, -1),
+				new UsernamePasswordCredentials("OPENVIDUAPP", secret.toCharArray()));
+		this.httpClient = builder.setDefaultCredentialsProvider(credentialsProvider).build();
+	}
+
+	/**
+	 * @param hostname URL where your OpenVidu deployment is up an running. It must
+	 *                 be the full URL (e.g. <code>https://12.34.56.78:1234/</code>)
+	 * 
+	 * @param builder  An instance of <a href=
+	 *                 "https://hc.apache.org/httpcomponents-client-5.2.x/current/httpclient5/apidocs/org/apache/hc/client5/http/impl/classic/HttpClientBuilder.html"
+	 *                 target=
+	 *                 "_blank">org.apache.hc.client5.http.impl.classic.HttpClientBuilder</a>.
+	 *                 This overrides the internal HTTP client in use. This method
+	 *                 allows you to custom configure the HTTP client to your needs.
+	 *                 This may be interesting for many reasons, including:
+	 *                 <ul>
+	 *                 <li>Adding custom HTTP headers</li>
+	 *                 <li>Adding proxy configuration</li>
+	 *                 <li>Customizing the SSLContext</li>
+	 *                 <li>Modifying the connection timeouts</li>
+	 *                 <li>Setting up a cookie store</li>
+	 *                 </ul>
+	 */
+	public OpenVidu(String hostname, HttpClientBuilder builder) {
+
+		testHostname(hostname);
+		this.hostname = hostname;
+		if (!this.hostname.endsWith("/")) {
+			this.hostname += "/";
+		}
+
+		this.httpClient = builder.build();
 	}
 
 	/**
@@ -181,44 +267,41 @@ public class OpenVidu {
 	 *                                     API</a>)
 	 */
 	public Recording startRecording(String sessionId, RecordingProperties properties)
-			throws OpenViduJavaClientException, OpenViduHttpException {
+			throws OpenViduHttpException, OpenViduJavaClientException {
 
-		HttpPost request = new HttpPost(this.hostname + API_RECORDINGS_START);
+		final HttpClientResponseHandler<Recording> responseHandler = new HttpClientResponseHandler<Recording>() {
+			@Override
+			public Recording handleResponse(final ClassicHttpResponse response) throws IOException, HttpException {
+				final int status = response.getCode();
+				if (status == HttpStatus.SC_OK) {
+					Recording r = new Recording(httpResponseEntityToJson(response.getEntity()));
+					Session activeSession = activeSessions.get(r.getSessionId());
+					if (activeSession != null) {
+						activeSession.setIsBeingRecorded(true);
+					} else {
+						log.warn(
+								"No active session found for sessionId '{}'. This instance of OpenVidu Java Client didn't create this session",
+								r.getSessionId());
+					}
+					return r;
+				} else {
+					throw openViduHttpException(status);
+				}
+			}
+		};
 
 		JsonObject json = properties.toJson();
 		json.addProperty("session", sessionId);
+		StringEntity params = new StringEntity(json.toString(), StandardCharsets.UTF_8);
 
-		StringEntity params = new StringEntity(json.toString(), "UTF-8");
-
+		HttpPost request = new HttpPost(this.hostname + API_RECORDINGS_START);
 		request.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
 		request.setEntity(params);
 
-		HttpResponse response = null;
 		try {
-			response = this.httpClient.execute(request);
-
-			int statusCode = response.getStatusLine().getStatusCode();
-			if ((statusCode == org.apache.http.HttpStatus.SC_OK)) {
-				Recording r = new Recording(httpResponseToJson(response));
-				Session activeSession = this.activeSessions.get(r.getSessionId());
-				if (activeSession != null) {
-					activeSession.setIsBeingRecorded(true);
-				} else {
-					log.warn(
-							"No active session found for sessionId '{}'. This instance of OpenVidu Java Client didn't create this session",
-							r.getSessionId());
-				}
-				return r;
-			} else {
-				throw new OpenViduHttpException(statusCode);
-			}
-
+			return this.httpClient.execute(request, responseHandler);
 		} catch (IOException e) {
-			throw new OpenViduJavaClientException(e.getMessage(), e.getCause());
-		} finally {
-			if (response != null) {
-				EntityUtils.consumeQuietly(response.getEntity());
-			}
+			throw ioExceptionToOpenViduHttpException(e);
 		}
 	}
 
@@ -288,32 +371,34 @@ public class OpenVidu {
 	 *                                     API</a>)
 	 */
 	public Recording stopRecording(String recordingId) throws OpenViduJavaClientException, OpenViduHttpException {
-		HttpPost request = new HttpPost(this.hostname + API_RECORDINGS_STOP + "/" + recordingId);
-		HttpResponse response = null;
-		try {
-			response = this.httpClient.execute(request);
 
-			int statusCode = response.getStatusLine().getStatusCode();
-			if ((statusCode == org.apache.http.HttpStatus.SC_OK)) {
-				Recording r = new Recording(httpResponseToJson(response));
-				Session activeSession = this.activeSessions.get(r.getSessionId());
-				if (activeSession != null) {
-					activeSession.setIsBeingRecorded(false);
+		final HttpClientResponseHandler<Recording> responseHandler = new HttpClientResponseHandler<Recording>() {
+			@Override
+			public Recording handleResponse(final ClassicHttpResponse response) throws IOException, HttpException {
+				final int status = response.getCode();
+				if (status == HttpStatus.SC_OK) {
+					Recording r = new Recording(httpResponseEntityToJson(response.getEntity()));
+					Session activeSession = activeSessions.get(r.getSessionId());
+					if (activeSession != null) {
+						activeSession.setIsBeingRecorded(false);
+					} else {
+						log.warn(
+								"No active session found for sessionId '{}'. This instance of OpenVidu Java Client didn't create this session",
+								r.getSessionId());
+					}
+					return r;
 				} else {
-					log.warn(
-							"No active session found for sessionId '{}'. This instance of OpenVidu Java Client didn't create this session",
-							r.getSessionId());
+					throw openViduHttpException(status);
 				}
-				return r;
-			} else {
-				throw new OpenViduHttpException(statusCode);
 			}
+		};
+
+		HttpPost request = new HttpPost(this.hostname + API_RECORDINGS_STOP + "/" + recordingId);
+
+		try {
+			return this.httpClient.execute(request, responseHandler);
 		} catch (IOException e) {
-			throw new OpenViduJavaClientException(e.getMessage(), e.getCause());
-		} finally {
-			if (response != null) {
-				EntityUtils.consumeQuietly(response.getEntity());
-			}
+			throw ioExceptionToOpenViduHttpException(e);
 		}
 	}
 
@@ -331,24 +416,25 @@ public class OpenVidu {
 	 *                                     API</a>)
 	 */
 	public Recording getRecording(String recordingId) throws OpenViduJavaClientException, OpenViduHttpException {
+
+		final HttpClientResponseHandler<Recording> responseHandler = new HttpClientResponseHandler<Recording>() {
+			@Override
+			public Recording handleResponse(final ClassicHttpResponse response) throws IOException, HttpException {
+				final int status = response.getCode();
+				if (status == HttpStatus.SC_OK) {
+					return new Recording(httpResponseEntityToJson(response.getEntity()));
+				} else {
+					throw openViduHttpException(status);
+				}
+			}
+		};
+
 		HttpGet request = new HttpGet(this.hostname + API_RECORDINGS + "/" + recordingId);
-		HttpResponse response = null;
+
 		try {
-			response = this.httpClient.execute(request);
-
-			int statusCode = response.getStatusLine().getStatusCode();
-			if ((statusCode == org.apache.http.HttpStatus.SC_OK)) {
-				return new Recording(httpResponseToJson(response));
-			} else {
-				throw new OpenViduHttpException(statusCode);
-			}
-
+			return this.httpClient.execute(request, responseHandler);
 		} catch (IOException e) {
-			throw new OpenViduJavaClientException(e.getMessage(), e.getCause());
-		} finally {
-			if (response != null) {
-				EntityUtils.consumeQuietly(response.getEntity());
-			}
+			throw ioExceptionToOpenViduHttpException(e);
 		}
 	}
 
@@ -361,30 +447,32 @@ public class OpenVidu {
 	 * @throws OpenViduHttpException
 	 */
 	public List<Recording> listRecordings() throws OpenViduJavaClientException, OpenViduHttpException {
+
+		final HttpClientResponseHandler<List<Recording>> responseHandler = new HttpClientResponseHandler<List<Recording>>() {
+			@Override
+			public List<Recording> handleResponse(final ClassicHttpResponse response)
+					throws IOException, HttpException {
+				final int status = response.getCode();
+				if (status == HttpStatus.SC_OK) {
+					List<Recording> recordings = new ArrayList<>();
+					JsonObject json = httpResponseEntityToJson(response.getEntity());
+					JsonArray array = json.get("items").getAsJsonArray();
+					array.forEach(item -> {
+						recordings.add(new Recording(item.getAsJsonObject()));
+					});
+					return recordings;
+				} else {
+					throw openViduHttpException(status);
+				}
+			}
+		};
+
 		HttpGet request = new HttpGet(this.hostname + API_RECORDINGS);
-		HttpResponse response = null;
+
 		try {
-			response = this.httpClient.execute(request);
-
-			int statusCode = response.getStatusLine().getStatusCode();
-			if ((statusCode == org.apache.http.HttpStatus.SC_OK)) {
-				List<Recording> recordings = new ArrayList<>();
-				JsonObject json = httpResponseToJson(response);
-				JsonArray array = json.get("items").getAsJsonArray();
-				array.forEach(item -> {
-					recordings.add(new Recording(item.getAsJsonObject()));
-				});
-				return recordings;
-			} else {
-				throw new OpenViduHttpException(statusCode);
-			}
-
+			return this.httpClient.execute(request, responseHandler);
 		} catch (IOException e) {
-			throw new OpenViduJavaClientException(e.getMessage(), e.getCause());
-		} finally {
-			if (response != null) {
-				EntityUtils.consumeQuietly(response.getEntity());
-			}
+			throw ioExceptionToOpenViduHttpException(e);
 		}
 	}
 
@@ -405,22 +493,158 @@ public class OpenVidu {
 	 *                                     API</a>)
 	 */
 	public void deleteRecording(String recordingId) throws OpenViduJavaClientException, OpenViduHttpException {
+
+		final HttpClientResponseHandler<Void> responseHandler = new HttpClientResponseHandler<Void>() {
+			@Override
+			public Void handleResponse(final ClassicHttpResponse response) throws IOException, HttpException {
+				final int status = response.getCode();
+				if (status != HttpStatus.SC_NO_CONTENT) {
+					throw openViduHttpException(status);
+				}
+				return null;
+			}
+		};
+
 		HttpDelete request = new HttpDelete(this.hostname + API_RECORDINGS + "/" + recordingId);
-		HttpResponse response = null;
+
 		try {
-			response = this.httpClient.execute(request);
-
-			int statusCode = response.getStatusLine().getStatusCode();
-			if (!(statusCode == org.apache.http.HttpStatus.SC_NO_CONTENT)) {
-				throw new OpenViduHttpException(statusCode);
-			}
-
+			this.httpClient.execute(request, responseHandler);
 		} catch (IOException e) {
-			throw new OpenViduJavaClientException(e.getMessage(), e.getCause());
-		} finally {
-			if (response != null) {
-				EntityUtils.consumeQuietly(response.getEntity());
+			throw ioExceptionToOpenViduHttpException(e);
+		}
+	}
+
+	/**
+	 * Starts the broadcast of a {@link io.openvidu.java.client.Session}
+	 *
+	 * @param sessionId    The sessionId of the session you want to start
+	 *                     broadcasting
+	 * @param broadcastUrl The URL where to broadcast
+	 * 
+	 * @throws OpenViduJavaClientException
+	 * @throws OpenViduHttpException       The status code carries a specific
+	 *                                     meaning
+	 *                                     {@link io.openvidu.java.client.OpenViduHttpException#getStatus()}
+	 *                                     (see <a href=
+	 *                                     "/en/stable/reference-docs/REST-API/#start-broadcast">REST
+	 *                                     API</a>)
+	 */
+	public void startBroadcast(String sessionId, String broadcastUrl)
+			throws OpenViduJavaClientException, OpenViduHttpException {
+		this.startBroadcast(sessionId, broadcastUrl, new RecordingProperties.Builder().build());
+	}
+
+	/**
+	 * Starts the broadcast of a {@link io.openvidu.java.client.Session}
+	 *
+	 * @param sessionId    The sessionId of the session you want to start
+	 *                     broadcasting
+	 * @param broadcastUrl The URL where to broadcast
+	 * @param properties   The configuration for this broadcast. It uses a subset of
+	 *                     the {@link io.openvidu.java.client.RecordingProperties}:
+	 *                     <ul>
+	 *                     <li>{@link RecordingProperties.Builder#hasAudio(boolean)}</li>
+	 *                     <li>{@link RecordingProperties.Builder#resolution(String)}</li>
+	 *                     <li>{@link RecordingProperties.Builder#frameRate(int)}</li>
+	 *                     <li>{@link RecordingProperties.Builder#recordingLayout(RecordingLayout)}</li>
+	 *                     <li>{@link RecordingProperties.Builder#customLayout(String)}</li>
+	 *                     <li>{@link RecordingProperties.Builder#shmSize(long)}</li>
+	 *                     <li>{@link RecordingProperties.Builder#mediaNode(String)}</li>
+	 *                     </ul>
+	 * 
+	 * 
+	 * @throws OpenViduJavaClientException
+	 * @throws OpenViduHttpException       The status code carries a specific
+	 *                                     meaning
+	 *                                     {@link io.openvidu.java.client.OpenViduHttpException#getStatus()}
+	 *                                     (see <a href=
+	 *                                     "/en/stable/reference-docs/REST-API/#start-broadcast">REST
+	 *                                     API</a>)
+	 */
+	public void startBroadcast(String sessionId, String broadcastUrl, RecordingProperties properties)
+			throws OpenViduJavaClientException, OpenViduHttpException {
+		final HttpClientResponseHandler<Void> responseHandler = new HttpClientResponseHandler<Void>() {
+			@Override
+			public Void handleResponse(final ClassicHttpResponse response) throws IOException, HttpException {
+				final int status = response.getCode();
+				if (status == HttpStatus.SC_OK) {
+					Session activeSession = activeSessions.get(sessionId);
+					if (activeSession != null) {
+						activeSession.setIsBeingBroadcasted(true);
+					} else {
+						log.warn(
+								"No active session found for sessionId '{}'. This instance of OpenVidu Java Client didn't create this session",
+								sessionId);
+					}
+				} else {
+					throw openViduHttpException(status);
+				}
+				return null;
 			}
+		};
+
+		JsonObject json = properties.toJson();
+		json.addProperty("session", sessionId);
+		json.addProperty("broadcastUrl", broadcastUrl);
+		StringEntity params = new StringEntity(json.toString(), StandardCharsets.UTF_8);
+
+		HttpPost request = new HttpPost(this.hostname + API_BROADCAST_START);
+		request.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+		request.setEntity(params);
+
+		try {
+			this.httpClient.execute(request, responseHandler);
+		} catch (IOException e) {
+			throw ioExceptionToOpenViduHttpException(e);
+		}
+	}
+
+	/**
+	 * Stops the broadcast of a {@link io.openvidu.java.client.Session}
+	 *
+	 * @param sessionId The sessionId of the session you want to stop broadcasting
+	 * 
+	 * @throws OpenViduJavaClientException
+	 * @throws OpenViduHttpException       The status code carries a specific
+	 *                                     meaning
+	 *                                     {@link io.openvidu.java.client.OpenViduHttpException#getStatus()}
+	 *                                     (see <a href=
+	 *                                     "/en/stable/reference-docs/REST-API/#stop-broadcast">REST
+	 *                                     API</a>)
+	 */
+	public void stopBroadcast(String sessionId) throws OpenViduJavaClientException, OpenViduHttpException {
+		final HttpClientResponseHandler<Void> responseHandler = new HttpClientResponseHandler<Void>() {
+			@Override
+			public Void handleResponse(final ClassicHttpResponse response) throws IOException, HttpException {
+				final int status = response.getCode();
+				if (status == HttpStatus.SC_OK) {
+					Session activeSession = activeSessions.get(sessionId);
+					if (activeSession != null) {
+						activeSession.setIsBeingBroadcasted(false);
+					} else {
+						log.warn(
+								"No active session found for sessionId '{}'. This instance of OpenVidu Java Client didn't create this session",
+								sessionId);
+					}
+					return null;
+				} else {
+					throw openViduHttpException(status);
+				}
+			}
+		};
+
+		JsonObject json = new JsonObject();
+		json.addProperty("session", sessionId);
+		StringEntity params = new StringEntity(json.toString(), StandardCharsets.UTF_8);
+
+		HttpPost request = new HttpPost(this.hostname + API_BROADCAST_STOP);
+		request.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+		request.setEntity(params);
+
+		try {
+			this.httpClient.execute(request, responseHandler);
+		} catch (IOException e) {
+			throw ioExceptionToOpenViduHttpException(e);
 		}
 	}
 
@@ -488,83 +712,133 @@ public class OpenVidu {
 	 * @throws OpenViduJavaClientException
 	 */
 	public boolean fetch() throws OpenViduJavaClientException, OpenViduHttpException {
+
+		final OpenVidu thisOV = this;
+		final HttpClientResponseHandler<Boolean> responseHandler = new HttpClientResponseHandler<Boolean>() {
+			@Override
+			public Boolean handleResponse(final ClassicHttpResponse response) throws IOException, HttpException {
+				final int status = response.getCode();
+				if (status == HttpStatus.SC_OK) {
+
+					JsonObject jsonSessions = httpResponseEntityToJson(response.getEntity());
+					JsonArray jsonArraySessions = jsonSessions.get("content").getAsJsonArray();
+
+					// Boolean to store if any Session has changed
+					final boolean[] hasChanged = { false };
+
+					// 1. Set to store fetched sessionIds and later remove closed ones
+					Set<String> fetchedSessionIds = new HashSet<>();
+					jsonArraySessions.forEach(sessionJsonElement -> {
+
+						JsonObject sessionJson = sessionJsonElement.getAsJsonObject();
+						final Session sessionObj = new Session(thisOV, sessionJson);
+						String id = sessionObj.getSessionId();
+						fetchedSessionIds.add(id);
+
+						// 2. Update existing Session
+						activeSessions.computeIfPresent(id, (sId, s) -> {
+							String beforeJSON = s.toJson();
+							s = s.resetWithJson(sessionJson);
+							String afterJSON = s.toJson();
+							boolean changed = !beforeJSON.equals(afterJSON);
+							hasChanged[0] = hasChanged[0] || changed;
+							log.info("Available session '{}' info fetched. Any change: {}", id, changed);
+							return s;
+						});
+
+						// 3. Add new Session
+						activeSessions.computeIfAbsent(id, sId -> {
+							log.info("New session '{}' fetched", id);
+							hasChanged[0] = true;
+							return sessionObj;
+						});
+					});
+
+					// 4. Remove closed sessions from local collection
+					activeSessions.entrySet().removeIf(entry -> {
+						if (fetchedSessionIds.contains(entry.getKey())) {
+							return false;
+						} else {
+							log.info("Removing closed session {}", entry.getKey());
+							hasChanged[0] = true;
+							return true;
+						}
+					});
+
+					log.info("Active sessions info fetched: {}", activeSessions.keySet());
+					return hasChanged[0];
+				} else {
+					throw openViduHttpException(status);
+				}
+			}
+		};
+
 		HttpGet request = new HttpGet(this.hostname + API_SESSIONS + "?pendingConnections=true");
 
-		HttpResponse response = null;
 		try {
-			response = this.httpClient.execute(request);
-
-			int statusCode = response.getStatusLine().getStatusCode();
-			if ((statusCode == org.apache.http.HttpStatus.SC_OK)) {
-
-				JsonObject jsonSessions = httpResponseToJson(response);
-				JsonArray jsonArraySessions = jsonSessions.get("content").getAsJsonArray();
-
-				// Boolean to store if any Session has changed
-				final boolean[] hasChanged = { false };
-
-				// 1. Set to store fetched sessionIds and later remove closed ones
-				Set<String> fetchedSessionIds = new HashSet<>();
-				jsonArraySessions.forEach(sessionJsonElement -> {
-
-					JsonObject sessionJson = sessionJsonElement.getAsJsonObject();
-					final Session sessionObj = new Session(this, sessionJson);
-					String id = sessionObj.getSessionId();
-					fetchedSessionIds.add(id);
-
-					// 2. Update existing Session
-					this.activeSessions.computeIfPresent(id, (sId, s) -> {
-						String beforeJSON = s.toJson();
-						s = s.resetWithJson(sessionJson);
-						String afterJSON = s.toJson();
-						boolean changed = !beforeJSON.equals(afterJSON);
-						hasChanged[0] = hasChanged[0] || changed;
-						log.info("Available session '{}' info fetched. Any change: {}", id, changed);
-						return s;
-					});
-
-					// 3. Add new Session
-					this.activeSessions.computeIfAbsent(id, sId -> {
-						log.info("New session '{}' fetched", id);
-						hasChanged[0] = true;
-						return sessionObj;
-					});
-				});
-
-				// 4. Remove closed sessions from local collection
-				this.activeSessions.entrySet().removeIf(entry -> {
-					if (fetchedSessionIds.contains(entry.getKey())) {
-						return false;
-					} else {
-						log.info("Removing closed session {}", entry.getKey());
-						hasChanged[0] = true;
-						return true;
-					}
-				});
-
-				log.info("Active sessions info fetched: {}", this.activeSessions.keySet());
-				return hasChanged[0];
-
-			} else {
-				throw new OpenViduHttpException(statusCode);
-			}
-
+			return this.httpClient.execute(request, responseHandler);
 		} catch (IOException e) {
-			throw new OpenViduJavaClientException(e.getMessage(), e.getCause());
-		} finally {
-			if (response != null) {
-				EntityUtils.consumeQuietly(response.getEntity());
-			}
+			throw ioExceptionToOpenViduHttpException(e);
 		}
 	}
 
-	private JsonObject httpResponseToJson(HttpResponse response) throws OpenViduJavaClientException {
+	protected static JsonObject httpResponseEntityToJson(HttpEntity responseEntity) throws IOException {
 		try {
-			JsonObject json = new Gson().fromJson(EntityUtils.toString(response.getEntity(), "UTF-8"),
+			JsonObject json = new Gson().fromJson(EntityUtils.toString(responseEntity, StandardCharsets.UTF_8),
 					JsonObject.class);
 			return json;
 		} catch (JsonSyntaxException | ParseException | IOException e) {
-			throw new OpenViduJavaClientException(e.getMessage(), e.getCause());
+			JsonObject json = new JsonObject();
+			json.addProperty("openviduExceptionType", OpenViduJavaClientException.class.getSimpleName());
+			json.addProperty("openviduExceptionMessage", e.getMessage());
+			throw new IOException(json.toString(), e.getCause());
+		}
+	}
+
+	protected static IOException openViduHttpException(int status) {
+		JsonObject json = new JsonObject();
+		json.addProperty("openviduExceptionType", OpenViduHttpException.class.getSimpleName());
+		json.addProperty("openviduExceptionMessage", status);
+		return new IOException(json.toString());
+	}
+
+	protected static IOException openViduException(OpenViduException exception) {
+		JsonObject json = new JsonObject();
+		json.addProperty("openviduExceptionType", exception.getClass().getSimpleName());
+		json.addProperty("openviduExceptionMessage", exception.getMessage());
+		return new IOException(json.toString());
+	}
+
+	protected static OpenViduHttpException ioExceptionToOpenViduHttpException(IOException exception)
+			throws OpenViduJavaClientException {
+		JsonObject json;
+		try {
+			String message = exception.getMessage();
+			json = JsonParser.parseString(message).getAsJsonObject();
+		} catch (Exception e) {
+			throw new OpenViduJavaClientException(exception.getMessage(), exception.getCause());
+		}
+		if (json.has("openviduExceptionType")) {
+			String openviduExceptionType = json.get("openviduExceptionType").getAsString();
+			if (OpenViduJavaClientException.class.getSimpleName().equals(openviduExceptionType)) {
+				throw new OpenViduJavaClientException(json.get("openviduExceptionMessage").getAsString());
+			} else if (OpenViduHttpException.class.getSimpleName().equals(openviduExceptionType)) {
+				return new OpenViduHttpException(json.get("openviduExceptionMessage").getAsInt());
+			} else {
+				log.error("Unknown OpenVidu Exception: " + openviduExceptionType);
+				throw new OpenViduJavaClientException(exception.getMessage(), exception.getCause());
+			}
+		} else {
+			// Unlikely case when an unknown exception has a JSON format message
+			throw new OpenViduJavaClientException(exception.getMessage(), exception.getCause());
+		}
+	}
+
+	private void testHostname(String hostnameStr) {
+		try {
+			new URL(hostnameStr);
+		} catch (MalformedURLException e) {
+			throw new RuntimeException("The hostname \"" + hostnameStr + "\" is not a valid URL: " + e.getMessage());
 		}
 	}
 

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { OpenViduAngularConfig, ParticipantFactoryFunction } from '../../config/openvidu-angular.config';
+import { BroadcastingError } from '../../models/broadcasting.model';
 import { RecordingInfo } from '../../models/recording.model';
 
 // import { version } from '../../../../package.json';
@@ -18,10 +19,13 @@ export class OpenViduAngularConfigService {
 	prejoin = <BehaviorSubject<boolean>>new BehaviorSubject(true);
 	prejoinObs: Observable<boolean>;
 
-	videoMuted = <BehaviorSubject<boolean>>new BehaviorSubject(false);
-	videoMutedObs: Observable<boolean>;
-	audioMuted = <BehaviorSubject<boolean>>new BehaviorSubject(false);
-	audioMutedObs: Observable<boolean>;
+	simulcast = <BehaviorSubject<boolean>>new BehaviorSubject(false);
+	simulcastObs: Observable<boolean>;
+
+	videoMuted = <BehaviorSubject<boolean | undefined>>new BehaviorSubject(undefined);
+	videoMutedObs: Observable<boolean | undefined>;
+	audioMuted = <BehaviorSubject<boolean | undefined>>new BehaviorSubject(undefined);
+	audioMutedObs: Observable<boolean | undefined>;
 	screenshareButton = <BehaviorSubject<boolean>>new BehaviorSubject(true);
 	screenshareButtonObs: Observable<boolean>;
 
@@ -49,6 +53,11 @@ export class OpenViduAngularConfigService {
 	displaySessionName = <BehaviorSubject<boolean>>new BehaviorSubject(true);
 	displaySessionNameObs: Observable<boolean>;
 
+	streamFrameRate = <BehaviorSubject<number>>new BehaviorSubject(30);
+	streamFrameRateObs: Observable<number>;
+
+	streamResolution = <BehaviorSubject<string>>new BehaviorSubject('640x480');
+	streamResolutionObs: Observable<string>;
 	displayLogo = <BehaviorSubject<boolean>>new BehaviorSubject(true);
 	displayLogoObs: Observable<boolean>;
 	displayParticipantName = <BehaviorSubject<boolean>>new BehaviorSubject(true);
@@ -61,15 +70,22 @@ export class OpenViduAngularConfigService {
 	participantItemMuteButtonObs: Observable<boolean>;
 	backgroundEffectsButton = <BehaviorSubject<boolean>>new BehaviorSubject(true);
 	backgroundEffectsButtonObs: Observable<boolean>;
-	recordingsList = <BehaviorSubject<RecordingInfo[]>>new BehaviorSubject([]);
+	recordingsList: BehaviorSubject<RecordingInfo[]> = new BehaviorSubject(<RecordingInfo[]>[]);
 	recordingsListObs: Observable<RecordingInfo[]>;
 	recordingButton = <BehaviorSubject<boolean>>new BehaviorSubject(true);
 	recordingButtonObs: Observable<boolean>;
+	broadcastingButton = <BehaviorSubject<boolean>>new BehaviorSubject(true);
+	broadcastingButtonObs: Observable<boolean>;
 	recordingActivity = <BehaviorSubject<boolean>>new BehaviorSubject(true);
 	recordingActivityObs: Observable<boolean>;
+	broadcastingActivity = <BehaviorSubject<boolean>>new BehaviorSubject(true);
+	broadcastingActivityObs: Observable<boolean>;
 	recordingError = <BehaviorSubject<any>>new BehaviorSubject(null);
 	recordingErrorObs: Observable<any>;
-	adminRecordingsList = <BehaviorSubject<RecordingInfo[]>>new BehaviorSubject([]);
+	broadcastingErrorObs: Observable<BroadcastingError | undefined>;
+	broadcastingError = <BehaviorSubject<BroadcastingError | undefined>>new BehaviorSubject(undefined);
+	// Admin
+	adminRecordingsList: BehaviorSubject<RecordingInfo[]> = new BehaviorSubject(<RecordingInfo[]>[]);
 	adminRecordingsListObs: Observable<RecordingInfo[]>;
 	adminLoginError = <BehaviorSubject<any>>new BehaviorSubject(null);
 	adminLoginErrorObs: Observable<any>;
@@ -83,6 +99,7 @@ export class OpenViduAngularConfigService {
 		this.prejoinObs = this.prejoin.asObservable();
 		this.videoMutedObs = this.videoMuted.asObservable();
 		this.audioMutedObs = this.audioMuted.asObservable();
+		this.simulcastObs = this.simulcast.asObservable();
 		//Toolbar observables
 		this.screenshareButtonObs = this.screenshareButton.asObservable();
 		this.fullscreenButtonObs = this.fullscreenButton.asObservable();
@@ -94,9 +111,12 @@ export class OpenViduAngularConfigService {
 		this.displaySessionNameObs = this.displaySessionName.asObservable();
 		this.displayLogoObs = this.displayLogo.asObservable();
 		this.recordingButtonObs = this.recordingButton.asObservable();
+		this.broadcastingButtonObs = this.broadcastingButton.asObservable();
 		this.toolbarSettingsButtonObs = this.toolbarSettingsButton.asObservable();
 		this.captionsButtonObs = this.captionsButton.asObservable();
 		//Stream observables
+		this.streamFrameRateObs = this.streamFrameRate.asObservable();
+		this.streamResolutionObs = this.streamResolution.asObservable();
 		this.displayParticipantNameObs = this.displayParticipantName.asObservable();
 		this.displayAudioDetectionObs = this.displayAudioDetection.asObservable();
 		this.streamSettingsButtonObs = this.streamSettingsButton.asObservable();
@@ -106,6 +126,9 @@ export class OpenViduAngularConfigService {
 		this.recordingActivityObs = this.recordingActivity.asObservable();
 		this.recordingsListObs = this.recordingsList.asObservable();
 		this.recordingErrorObs = this.recordingError.asObservable();
+		// Broadcasting activity
+		this.broadcastingActivityObs = this.broadcastingActivity.asObservable();
+		this.broadcastingErrorObs = this.broadcastingError.asObservable();
 		// Admin dashboard
 		this.adminRecordingsListObs = this.adminRecordingsList.asObservable();
 		this.adminLoginErrorObs = this.adminLoginError.asObservable();
@@ -124,5 +147,25 @@ export class OpenViduAngularConfigService {
 
 	getParticipantFactory(): ParticipantFactoryFunction {
 		return this.getConfig().participantFactory;
+	}
+
+	isRecordingEnabled(): boolean {
+		return this.recordingButton.getValue() && this.recordingActivity.getValue();
+	}
+
+	isBroadcastingEnabled(): boolean {
+		return this.broadcastingButton.getValue() && this.broadcastingActivity.getValue();
+	}
+
+	getStreamResolution(): string {
+		return this.streamResolution.getValue();
+	}
+
+	getStreamFrameRate(): number {
+		return this.streamFrameRate.getValue();
+	}
+
+	isSimulcastEnabled(): boolean {
+		return this.simulcast.getValue() || false;
 	}
 }

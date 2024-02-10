@@ -229,8 +229,12 @@ public class Participant {
 		return ProtocolElements.STT_PARTICIPANT_PUBLICID.equals(this.participantPublicId);
 	}
 
-	public boolean isRecorderOrSttParticipant() {
-		return (this.isRecorderParticipant() || this.isSttParticipant());
+	public boolean isBroadcastParticipant() {
+		return isRecorderParticipant();
+	}
+
+	public boolean isRecorderOrSttOrBroadcastParticipant() {
+		return (this.isRecorderParticipant() || this.isSttParticipant() || this.isBroadcastParticipant());
 	}
 
 	public String getPublisherStreamId() {

@@ -53,7 +53,7 @@ import io.openvidu.java.client.KurentoOptions;
 import io.openvidu.java.client.OpenViduRole;
 import io.openvidu.java.client.Recording;
 import io.openvidu.java.client.SessionProperties;
-import io.openvidu.java.client.utils.FormatChecker;
+import io.openvidu.server.broadcast.BroadcastManager;
 import io.openvidu.server.cdr.CDREventRecordingStatusChanged;
 import io.openvidu.server.config.OpenviduConfig;
 import io.openvidu.server.coturn.CoturnCredentialsService;
@@ -74,6 +74,9 @@ public abstract class SessionManager {
 
 	@Autowired
 	protected RecordingManager recordingManager;
+
+	@Autowired
+	protected BroadcastManager broadcastManager;
 
 	@Autowired
 	protected OpenviduConfig openviduConfig;
@@ -192,6 +195,8 @@ public abstract class SessionManager {
 
 	public abstract void onUnsubscribeFromSpeechToText(Participant participant, Integer transactionId,
 			String connectionId);
+
+	public abstract void stopBroadcastIfNecessary(Session session, EndReason reason);
 
 	public void onEcho(String participantPrivateId, Integer requestId) {
 		sessionEventsHandler.onEcho(participantPrivateId, requestId);
@@ -314,8 +319,8 @@ public abstract class SessionManager {
 	 * @return null if concurrent storing of session
 	 */
 	public Session storeSessionNotActive(String sessionId, SessionProperties sessionProperties) {
-		Session sessionNotActive = this
-				.storeSessionNotActive(new Session(sessionId, sessionProperties, openviduConfig, recordingManager));
+		Session sessionNotActive = this.storeSessionNotActive(
+				new Session(sessionId, sessionProperties, openviduConfig, recordingManager, broadcastManager));
 		if (sessionNotActive == null) {
 			return null;
 		} else {
@@ -336,7 +341,7 @@ public abstract class SessionManager {
 
 	public Token newToken(Session session, OpenViduRole role, String serverMetadata, boolean record,
 			KurentoOptions kurentoOptions, List<IceServerProperties> customIceServers) throws Exception {
-		if (!FormatChecker.isServerMetadataFormatCorrect(serverMetadata)) {
+		if (!io.openvidu.java.client.Utils.isServerMetadataFormatCorrect(serverMetadata)) {
 			log.error("Data invalid format");
 			throw new OpenViduException(Code.GENERIC_ERROR_CODE, "Data invalid format");
 		}
@@ -699,6 +704,19 @@ public abstract class SessionManager {
 				} catch (OpenViduException e) {
 					log.error("Error stopping external recording {} of session {} in Media Node {}: {}", recordingId,
 							sessionId, kms.getId(), e.getMessage());
+				}
+			}
+		});
+		// Stop all external broadcasts
+		kms.getActiveBroadcasts().forEach(sessionId -> {
+			Session session = this.getSession(sessionId);
+			if (session != null && !session.isClosed()) {
+				// This is a broadcast of a Session hosted on a different Media Node
+				try {
+					this.broadcastManager.stopBroadcast(session, null, RecordingManager.finalReason(reason));
+				} catch (OpenViduException e) {
+					log.error("Error stopping external broadcast of session {} in Media Node {}: {}", sessionId,
+							kms.getId(), e.getMessage());
 				}
 			}
 		});

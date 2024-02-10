@@ -8,21 +8,14 @@ import { Recording, RecordingLayout, RecordingProperties } from 'openvidu-node-c
 })
 export class RecordingPropertiesComponent {
 
-    recMode = Recording.OutputMode;
-    recLayouts = RecordingLayout;
-
-    getRecordingProperties: RecordingProperties;
-    @Output() recordingPropertiesChange: EventEmitter<RecordingProperties> = new EventEmitter<RecordingProperties>();
+    @Input()
+    isBroadcast = false;
 
     @Input()
-    get recordingProperties(): RecordingProperties {
-        return this.getRecordingProperties;
-    }
+    recordingProperties: RecordingProperties;
 
-    set recordingProperties(value: RecordingProperties) {
-        this.getRecordingProperties = value;
-        this.recordingPropertiesChange.emit(this.getRecordingProperties);
-    }
+    recMode = Recording.OutputMode;
+    recLayouts = RecordingLayout;
 
     enumToArray(enumerator: any) {
         return Object.keys(enumerator);

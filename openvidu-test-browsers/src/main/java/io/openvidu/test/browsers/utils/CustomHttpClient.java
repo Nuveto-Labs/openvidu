@@ -17,38 +17,34 @@
 
 package io.openvidu.test.browsers.utils;
 
-import java.io.IOException;
+import java.net.Socket;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublisher;
+import java.net.http.HttpResponse;
 import java.security.KeyManagementException;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Map.Entry;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedTrustManager;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpMethod;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
-import com.mashape.unirest.http.HttpMethod;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mashape.unirest.request.HttpRequest;
-import com.mashape.unirest.request.HttpRequestWithBody;
 
 public class CustomHttpClient {
 
@@ -56,29 +52,61 @@ public class CustomHttpClient {
 
 	private String openviduUrl;
 	private String headerAuth;
+	private HttpClient client;
+
+	public CustomHttpClient(String url) throws Exception {
+		this(url, null, null);
+	}
 
 	public CustomHttpClient(String url, String user, String pass) throws Exception {
 		this.openviduUrl = url.replaceFirst("/*$", "");
-		this.headerAuth = "Basic " + Base64.getEncoder().encodeToString((user + ":" + pass).getBytes());
 
-		SSLContext sslContext = null;
-		try {
-			sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustSelfSignedStrategy() {
-				public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-					return true;
-				}
-			}).build();
-		} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
-			throw new Exception("Error building custom HttpClient: " + e.getMessage());
+		if (user != null && pass != null) {
+			this.headerAuth = "Basic " + Base64.getEncoder().encodeToString((user + ":" + pass).getBytes());
 		}
-		HttpClient unsafeHttpClient = HttpClients.custom().setSSLContext(sslContext)
-				.setSSLHostnameVerifier(new NoopHostnameVerifier()).build();
-		Unirest.setHttpClient(unsafeHttpClient);
+
+		SSLContext sslContext;
+		try {
+			sslContext = SSLContext.getInstance("TLS");
+			sslContext.init(null, new TrustManager[] { new X509ExtendedTrustManager() {
+				public X509Certificate[] getAcceptedIssuers() {
+					return null;
+				}
+
+				public void checkClientTrusted(final X509Certificate[] a_certificates, final String a_auth_type) {
+				}
+
+				public void checkServerTrusted(final X509Certificate[] a_certificates, final String a_auth_type) {
+				}
+
+				public void checkClientTrusted(final X509Certificate[] a_certificates, final String a_auth_type,
+						final Socket a_socket) {
+				}
+
+				public void checkServerTrusted(final X509Certificate[] a_certificates, final String a_auth_type,
+						final Socket a_socket) {
+				}
+
+				public void checkClientTrusted(final X509Certificate[] a_certificates, final String a_auth_type,
+						final SSLEngine a_engine) {
+				}
+
+				public void checkServerTrusted(final X509Certificate[] a_certificates, final String a_auth_type,
+						final SSLEngine a_engine) {
+				}
+			} }, null);
+		} catch (KeyManagementException | NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+
+		this.client = HttpClient.newBuilder().sslContext(sslContext).build();
 	}
 
 	public int getAndReturnStatus(String path, String credentials) throws Exception {
 		path = openviduUrl + (path.startsWith("/") ? path : ("/" + path));
-		return Unirest.get(path).header("Authorization", credentials).asJson().getStatus();
+		return client
+				.send(HttpRequest.newBuilder().GET().uri(new URI(path)).build(), HttpResponse.BodyHandlers.ofString())
+				.statusCode();
 	}
 
 	public JsonObject rest(HttpMethod method, String path, int status) throws Exception {
@@ -87,6 +115,10 @@ public class CustomHttpClient {
 
 	public JsonObject rest(HttpMethod method, String path, String body, int status) throws Exception {
 		return this.commonRest(method, path, body, status);
+	}
+
+	public String restString(HttpMethod method, String path, String body, int status) throws Exception {
+		return this.commonRestString(method, path, body, status);
 	}
 
 	/**
@@ -229,84 +261,91 @@ public class CustomHttpClient {
 		}
 	}
 
-	public void shutdown() throws IOException {
-		Unirest.shutdown();
+	private JsonObject commonRest(HttpMethod method, String path, String body, int status) throws Exception {
+		String stringResponse = this.commonRestString(method, path, body, status);
+		if (stringResponse == null) {
+			return null;
+		}
+		JsonElement jsonElement = null;
+		try {
+			jsonElement = JsonParser.parseString(stringResponse);
+		} catch (JsonParseException e) {
+			System.out.println("Response is not a JSON element: " + stringResponse);
+		}
+		JsonObject json = null;
+		if (jsonElement != null) {
+			try {
+				json = jsonElement.getAsJsonObject();
+			} catch (IllegalStateException e) {
+				System.out.println("Response is not a JSON object: " + stringResponse);
+			}
+		}
+		return json;
 	}
 
-	private JsonObject commonRest(HttpMethod method, String path, String body, int status) throws Exception {
-		HttpResponse<?> jsonResponse = null;
-		JsonObject json = null;
+	public String commonRestString(HttpMethod method, String path, String body, int status) throws Exception {
 		path = openviduUrl + (path.startsWith("/") ? path : ("/" + path));
 
-		HttpRequest request = null;
+		HttpRequest.Builder builder = HttpRequest.newBuilder().uri(new URI(path));
 		if (body != null && !body.isEmpty()) {
+			body = body.replaceAll("'", "\"");
+			BodyPublisher bodyPublisher = HttpRequest.BodyPublishers.ofString(body);
 			switch (method) {
 			case POST:
-				request = Unirest.post(path);
+				builder = builder.POST(bodyPublisher);
 				break;
 			case PUT:
-				request = Unirest.put(path);
+				builder = builder.PUT(bodyPublisher);
 				break;
 			case PATCH:
 			default:
-				request = Unirest.patch(path);
+				builder = builder.method("PATCH", bodyPublisher);
 				break;
 			}
-			((HttpRequestWithBody) request).header("Content-Type", "application/json").body(body.replaceAll("'", "\""));
+			builder.setHeader("Content-Type", "application/json");
 		} else {
 			switch (method) {
 			case GET:
-				request = Unirest.get(path);
-				request.header("Content-Type", "application/x-www-form-urlencoded");
+				builder = builder.GET();
+				builder.setHeader("Content-Type", "application/x-www-form-urlencoded");
 				break;
 			case POST:
-				request = Unirest.post(path);
+				builder = builder.POST(HttpRequest.BodyPublishers.noBody());
 				break;
 			case DELETE:
-				request = Unirest.delete(path);
-				request.header("Content-Type", "application/x-www-form-urlencoded");
+				builder = builder.DELETE();
+				builder.setHeader("Content-Type", "application/x-www-form-urlencoded");
 				break;
 			case PUT:
-				request = Unirest.put(path);
+				builder = builder.PUT(HttpRequest.BodyPublishers.noBody());
 			default:
 				break;
 			}
 		}
 
-		request = request.header("Authorization", this.headerAuth);
+		if (this.headerAuth != null) {
+			builder.setHeader("Authorization", this.headerAuth);
+		}
+		HttpResponse<String> response;
 		try {
-			jsonResponse = request.asJson();
-			if (jsonResponse.getBody() != null) {
-				jsonResponse.getBody();
-				json = JsonParser.parseString(((JsonNode) jsonResponse.getBody()).getObject().toString())
-						.getAsJsonObject();
-			}
-		} catch (UnirestException e) {
+			response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+		} catch (Exception e) {
+			throw new Exception("Error sending request to " + path + ": " + e.getMessage());
+		}
+
+		if (response.statusCode() == 500) {
+			log.error("Internal Server Error: {}", response.body());
+		}
+
+		if (status != response.statusCode()) {
 			try {
-				if (e.getCause().getCause().getCause() instanceof org.json.JSONException) {
-					try {
-						jsonResponse = request.asString();
-					} catch (UnirestException e1) {
-						throw new Exception("Error sending request to " + path + ": " + e.getMessage());
-					}
-				} else {
-					throw new Exception("Error sending request to " + path + ": " + e.getMessage());
-				}
-			} catch (NullPointerException e2) {
-				throw new Exception("Error sending request to " + path + ": " + e.getMessage());
+				System.err.println(response.body());
+			} catch (Exception e) {
 			}
+			throw new Exception(path + " expected to return status " + status + " but got " + response.statusCode());
 		}
 
-		if (jsonResponse.getStatus() == 500) {
-			log.error("Internal Server Error: {}", jsonResponse.getBody().toString());
-		}
-
-		if (status != jsonResponse.getStatus()) {
-			System.err.println(jsonResponse.getBody().toString());
-			throw new Exception(path + " expected to return status " + status + " but got " + jsonResponse.getStatus());
-		}
-
-		return json;
+		return response.body();
 	}
 
 }

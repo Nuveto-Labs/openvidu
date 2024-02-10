@@ -19,10 +19,8 @@ package io.openvidu.server.core;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.kurento.client.GenericMediaEvent;
@@ -63,8 +61,6 @@ public class SessionEventsHandler {
 
 	@Autowired
 	protected OpenviduBuildInfo openviduBuildConfig;
-
-	protected Map<String, Recording> recordingsToSendClientEvents = new ConcurrentHashMap<>();
 
 	public void onSessionCreated(Session session) {
 		CDR.recordSessionCreated(session);
@@ -130,16 +126,16 @@ public class SessionEventsHandler {
 				participantJson.add(ProtocolElements.JOINROOM_PEERSTREAMS_PARAM, streamsArray);
 			}
 
-			// Avoid emitting 'connectionCreated' event of existing RECORDER or STT
+			// Avoid emitting 'connectionCreated' event of existing RECORDER/STT/BROADCAST
 			// participant in openvidu-browser in newly joined participants
-			if (!existingParticipant.isRecorderOrSttParticipant()) {
+			if (!existingParticipant.isRecorderOrSttOrBroadcastParticipant()) {
 				resultArray.add(participantJson);
 			}
 
-			// If RECORDER or STT participant has joined do NOT send 'participantJoined'
+			// If RECORDER/STT/BROADCAST participant has joined do NOT send 'participantJoined'
 			// notification to existing participants. 'recordingStarted' will be sent to all
 			// existing participants when recorder first subscribe to a stream
-			if (!participant.isRecorderOrSttParticipant()) {
+			if (!participant.isRecorderOrSttOrBroadcastParticipant()) {
 				JsonObject notifParams = new JsonObject();
 
 				// Metadata associated to new participant
@@ -381,13 +377,6 @@ public class SessionEventsHandler {
 			result.addProperty(ProtocolElements.RECEIVEVIDEO_SDPANSWER_PARAM, sdpAnswer);
 		}
 		rpcNotificationService.sendResponse(participant.getParticipantPrivateId(), transactionId, result);
-
-		if (participant.isRecorderParticipant()) {
-			recordingsToSendClientEvents.computeIfPresent(session.getSessionId(), (key, value) -> {
-				sendRecordingStartedNotification(session, value);
-				return null;
-			});
-		}
 	}
 
 	public void onUnsubscribe(Participant participant, Integer transactionId, OpenViduException error) {
@@ -519,8 +508,8 @@ public class SessionEventsHandler {
 				evictedParticipant.getParticipantPublicId());
 		params.addProperty(ProtocolElements.PARTICIPANTEVICTED_REASON_PARAM, reason != null ? reason.name() : "");
 
-		if (evictedParticipant.isRecorderOrSttParticipant()) {
-			// Do not send a message when evicting RECORDER or STT participant
+		if (evictedParticipant.isRecorderOrSttOrBroadcastParticipant()) {
+			// Do not send a message when evicting RECORDER/STT/BROADCAST participant
 			rpcNotificationService.sendNotification(evictedParticipant.getParticipantPrivateId(),
 					ProtocolElements.PARTICIPANTEVICTED_METHOD, params);
 		}
@@ -555,9 +544,6 @@ public class SessionEventsHandler {
 	}
 
 	public void sendRecordingStoppedNotification(Session session, Recording recording, EndReason reason) {
-
-		// Be sure to clean this map (this should return null)
-		recordingsToSendClientEvents.remove(session.getSessionId());
 
 		// Filter participants by roles according to "OPENVIDU_RECORDING_NOTIFICATION"
 		Set<Participant> existingParticipants;
@@ -685,7 +671,7 @@ public class SessionEventsHandler {
 	 * by the crashed Media Node
 	 */
 	public void onMediaNodeCrashed(Kms kms, String environmentId, long timeOfDisconnection, List<String> sessionIds,
-			List<String> recordingIds) {
+			List<String> recordingIds, List<String> broadcasts) {
 	}
 
 	public void onMediaNodeRecovered(Kms kms, String environmentId, long timeOfConnection) {
@@ -713,13 +699,9 @@ public class SessionEventsHandler {
 			Set<Participant> subscribedParticipants) {
 	}
 
-	public void storeRecordingToSendClientEvent(Recording recording) {
-		recordingsToSendClientEvents.put(recording.getSessionId(), recording);
-	}
-
 	protected Set<Participant> filterParticipantsByRole(Set<OpenViduRole> roles, Set<Participant> participants) {
 		return participants.stream().filter(part -> {
-			if (part.isRecorderOrSttParticipant()) {
+			if (part.isRecorderOrSttOrBroadcastParticipant()) {
 				return false;
 			}
 			return roles.contains(part.getToken().getRole());

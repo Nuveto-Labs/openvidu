@@ -71,17 +71,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<version>${version.spring-boot}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.skyscreamer</groupId>
-					<artifactId>jsonassert</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>io.github.bonigarcia</groupId>
-			<artifactId>webdrivermanager</artifactId>
-			<version>${version.webdrivermanager}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.seleniumhq.selenium</groupId>
@@ -104,11 +93,6 @@
 			<version>${version.gson}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.mashape.unirest</groupId>
-			<artifactId>unirest-java</artifactId>
-			<version>${version.unirest}</version>
-		</dependency>
-		<dependency>
 			<groupId>io.openvidu</groupId>
 			<artifactId>openvidu-test-browsers</artifactId>
 			<version>${version.openvidu.test.browsers}</version>
@@ -119,6 +103,11 @@
 			<version>${version.openvidu.java.client}</version>
 		</dependency>
 		<dependency>
+			<groupId>com.github.docker-java</groupId>
+			<artifactId>docker-java</artifactId>
+			<version>${version.dockerjava}</version>
+		</dependency>
+		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
 			<version>${version.testcontainers}</version>
@@ -126,7 +115,7 @@
 		<dependency>
 			<groupId>info.debatty</groupId>
 			<artifactId>java-string-similarity</artifactId>
-			<version>2.0.0</version>
+			<version>${version.stringsimilarity}</version>
 		</dependency>
 	</dependencies>
 

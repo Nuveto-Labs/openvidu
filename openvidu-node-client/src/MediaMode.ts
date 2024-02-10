@@ -16,10 +16,9 @@
  */
 
 /**
- * See [[SessionProperties.mediaMode]]
+ * See {@link SessionProperties.mediaMode}
  */
 export enum MediaMode {
-
     /**
      * _(not available yet)_ The session will attempt to transmit streams directly between clients
      */

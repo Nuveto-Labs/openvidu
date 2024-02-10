@@ -1,8 +1,19 @@
-import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { RecordingInfo } from 'openvidu-angular';
 import { catchError, lastValueFrom } from 'rxjs';
 import { throwError as observableThrowError } from 'rxjs/internal/observable/throwError';
-import { RecordingInfo } from 'openvidu-angular';
+
+interface SessionResponse {
+	cameraToken: string;
+	screenToken: string;
+	recordingEnabled: boolean;
+	isRecordingActive: boolean;
+	recordings?: RecordingInfo[];
+	broadcastingEnabled: boolean;
+	isBroadcastingActive: boolean;
+}
+
 
 @Injectable({
 	providedIn: 'root'
@@ -19,7 +30,7 @@ export class RestService {
 			return await this.createToken(_sessionId, openviduServerUrl, openviduSecret);
 		}
 	}
-	async getTokensFromBackend(sessionId: string): Promise<{ cameraToken: string; screenToken: string; recordings?: RecordingInfo[] }> {
+	async getTokensFromBackend(sessionId: string): Promise<SessionResponse> {
 		try {
 			return lastValueFrom(this.http.post<any>(this.baseHref + 'sessions', { sessionId }));
 		} catch (error) {
@@ -41,6 +52,22 @@ export class RestService {
 		}
 	}
 
+	async startBroadcasting(broadcastUrl: string) {
+		try {
+			const options = {
+				headers: new HttpHeaders({
+					'Content-Type': 'application/json'
+				})
+			};
+			return lastValueFrom(this.http.post<any>(this.baseHref + 'broadcasts/start', { broadcastUrl }, options));
+		} catch (error) {
+			if (error.status === 404) {
+				throw { status: error.status, message: 'Cannot connect with backend. ' + error.url + ' not found' };
+			}
+			throw error.error;
+		}
+	}
+
 	async stopRecording(sessionId: string) {
 		try {
 			return lastValueFrom(this.http.post<any>(this.baseHref + 'recordings/stop', { sessionId }));
@@ -52,10 +79,21 @@ export class RestService {
 		}
 	}
 
+	async stopBroadcasting() {
+		try {
+			return lastValueFrom(this.http.delete<any>(`${this.baseHref}broadcasts/stop`));
+		} catch (error) {
+			if (error.status === 404) {
+				throw { status: error.status, message: 'Cannot connect with backend. ' + error.url + ' not found' };
+			}
+			throw error;
+		}
+	}
+
 	async login(password: string): Promise<any[]> {
 		try {
 			return lastValueFrom(
-				this.http.post<any>(`${this.baseHref}admin/login`, {
+				this.http.post<any>(`${this.baseHref}auth/admin/login`, {
 					password
 				})
 			);
@@ -70,9 +108,7 @@ export class RestService {
 
 	async logout(): Promise<void> {
 		try {
-			return lastValueFrom(
-				this.http.post<any>(`${this.baseHref}admin/logout`, {})
-			);
+			return lastValueFrom(this.http.post<any>(`${this.baseHref}auth/admin/logout`, {}));
 		} catch (error) {
 			console.log(error);
 			if (error.status === 404) {
@@ -81,7 +117,6 @@ export class RestService {
 			throw error;
 		}
 	}
-
 
 	async deleteRecording(id: string): Promise<any[]> {
 		try {
@@ -96,9 +131,7 @@ export class RestService {
 	}
 
 	getRecordings(): Promise<any[]> {
-		return lastValueFrom(
-			this.http.get<any>(`${this.baseHref}recordings`)
-		);
+		return lastValueFrom(this.http.get<any>(`${this.baseHref}recordings`));
 	}
 
 	getRecording(recordingId: string) {
@@ -119,7 +152,7 @@ export class RestService {
 	getRecording2(recordingId: string) {
 		try {
 			return lastValueFrom(
-				this.http.get(`${this.baseHref}recordings/${recordingId}`,{
+				this.http.get(`${this.baseHref}recordings/${recordingId}`, {
 					responseType: 'blob'
 				})
 			);

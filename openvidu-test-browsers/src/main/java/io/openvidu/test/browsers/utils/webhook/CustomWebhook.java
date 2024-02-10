@@ -18,6 +18,8 @@
 package io.openvidu.test.browsers.utils.webhook;
 
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -25,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -49,8 +50,8 @@ public class CustomWebhook {
 
 	public static CountDownLatch initLatch;
 	public static int accumulatedNumberOfEvents = 0;
-	public final static ConcurrentMap<String, AtomicInteger> accumulatedEvents = new ConcurrentHashMap<>();
-	static final ConcurrentMap<String, BlockingQueue<JsonObject>> events = new ConcurrentHashMap<>();
+	public final static ConcurrentMap<String, List<JsonObject>> accumulatedEvents = new ConcurrentHashMap<>();
+	public static final ConcurrentMap<String, BlockingQueue<JsonObject>> events = new ConcurrentHashMap<>();
 	static final BlockingQueue<JsonObject> eventsInOrder = new LinkedBlockingDeque<>();
 
 	public static void main(String[] args, CountDownLatch initLatch) {
@@ -65,14 +66,14 @@ public class CustomWebhook {
 		CustomWebhook.context.close();
 	}
 
-	public static void clean() {
+	public synchronized static void clean() {
 		CustomWebhook.accumulatedNumberOfEvents = 0;
 		CustomWebhook.accumulatedEvents.clear();
 		CustomWebhook.eventsInOrder.clear();
 		CustomWebhook.events.clear();
 	}
 
-	public static void cleanEventsInOrder() {
+	public synchronized static void cleanEventsInOrder() {
 		CustomWebhook.eventsInOrder.clear();
 	}
 
@@ -156,9 +157,8 @@ public class CustomWebhook {
 			accumulatedNumberOfEvents++;
 			eventsInOrder.add(event);
 			final String eventName = event.get("event").getAsString();
-			if (accumulatedEvents.putIfAbsent(eventName, new AtomicInteger(1)) != null) {
-				accumulatedEvents.get(eventName).incrementAndGet();
-			}
+			accumulatedEvents.putIfAbsent(eventName, new LinkedList<>());
+			accumulatedEvents.get(eventName).add(event);
 			final BlockingQueue<JsonObject> queue = new LinkedBlockingDeque<>();
 			if (!CustomWebhook.events.computeIfAbsent(eventName, e -> {
 				queue.add(event);

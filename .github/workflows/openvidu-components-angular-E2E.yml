@@ -4,12 +4,17 @@ on:
     paths:
       - 'openvidu-components-angular/**'
       - 'openvidu-browser/**'
+      - 'openvidu-node-client/**'
       - '.github/workflows/openvidu-components-angular-E2E.yml'
   pull_request:
     branches:
       - master
   workflow_dispatch:
-
+    inputs:
+      commit_sha:
+          description: 'Commit SHA'
+          required: false
+          default: ''
 
 jobs:
 
@@ -18,21 +23,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.commit_sha || github.sha }}
     - uses: actions/setup-node@v3
       with:
         node-version: '16'
+    - name: Commit URL
+      run: echo https://github.com/OpenVidu/openvidu/commit/${{ inputs.commit_sha || github.sha }}
     - name: Send repository dispatch event
       env:
         GITHUB_TOKEN: ${{ secrets.OPENVIDU_DISPATCH_EVENT_GA }}
         COMMIT_MESSAGE: ${{ github.event.head_commit.message || 'Manually' }}
         COMMIT_URL: ${{ github.event.commits[0].url || 'Manually' }}
+        BRANCH_NAME: ${{ github.ref_name }}
       run: |
         curl \
         -X POST \
         -H "Accept: application/vnd.github+json" \
         -H "Authorization: Bearer ${GITHUB_TOKEN}" \
         https://api.github.com/repos/OpenVidu/openvidu-call/dispatches \
-        -d '{"event_type":"openvidu-components-angular","client_payload":{"commit-message":"'"$COMMIT_MESSAGE"'","commit-ref":"'"$COMMIT_URL"'"}}'
+        -d '{"event_type":"openvidu-components-angular","client_payload":{"commit-message":"'"$COMMIT_MESSAGE"'","commit-ref":"'"$COMMIT_URL"'", "branch-name":"'"$BRANCH_NAME"'"}}'
     - name: Build openvidu-browser
       run: |
         cd openvidu-browser
@@ -51,6 +61,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.commit_sha || github.sha }}
     - uses: actions/setup-node@v3
       with:
         node-version: '16'
@@ -59,7 +71,7 @@ jobs:
         name: openvidu-browser
         path: openvidu-components-angular
     - name: Run Browserless Chrome
-      run: docker run -d -p 3000:3000 --network host browserless/chrome:1.53-chrome-stable
+      run: docker run -d -p 3000:3000 --network host browserless/chrome:1.57-chrome-stable
     - name: Run openvidu-server-kms
       run: |
         docker run -p 4443:4443 --rm -d \
@@ -80,10 +92,12 @@ jobs:
 
   webcomponent_e2e:
     needs: test_setup
-    name: Webcomponent E2E tests
+    name: Webcomponent E2E CE tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.commit_sha || github.sha }}
     - uses: actions/setup-node@v3
       with:
         node-version: '16'
@@ -92,7 +106,7 @@ jobs:
         name: openvidu-browser
         path: openvidu-components-angular
     - name: Run Browserless Chrome
-      run: docker run -d -p 3000:3000 --network host browserless/chrome:1.53-chrome-stable
+      run: docker run -d -p 3000:3000 --network host browserless/chrome:1.57-chrome-stable
     - name: Run openvidu-server-kms
       run: |
         docker run -p 4443:4443 --rm -d \
@@ -110,3 +124,35 @@ jobs:
       run: npm run webcomponent:serve-testapp --prefix openvidu-components-angular &
     - name: Run Webcomponent E2E
       run:  npm run webcomponent:e2e-ci --prefix openvidu-components-angular
+
+  webcomponent_e2e_pro:
+    if: false #Skip PRO test because infra is unstable
+    needs: test_setup
+    name: Webcomponent E2E PRO tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+    - uses: actions/download-artifact@v3
+      with:
+        name: openvidu-browser
+        path: openvidu-components-angular
+    - name: Run Browserless Chrome
+      run: docker run -d -p 3000:3000 --network host browserless/chrome:1.57-chrome-stable
+    - name: Install openvidu-browser and dependencies
+      run: |
+        cd openvidu-components-angular
+        npm install openvidu-browser-*.tgz
+    - name: Build openvidu-angular
+      run: npm run lib:build --prefix openvidu-components-angular
+    - name: Build openvidu-webcomponent
+      run: npm run webcomponent:build --prefix openvidu-components-angular
+    - name: Serve Webcomponent Testapp
+      run: npm run webcomponent:serve-testapp --prefix openvidu-components-angular &
+    - name: Run Webcomponent E2E PRO
+      env:
+        OPENVIDU_SERVER_URL: ${{ secrets.OPENVIDU_CALL_NEXT_URL }}
+        OPENVIDU_SECRET: ${{ secrets.OPENVIDU_CALL_NEXT_SECRET }}
+      run: npm run webcomponent:e2e-pro-ci --prefix openvidu-components-angular

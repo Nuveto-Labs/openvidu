@@ -39,6 +39,7 @@ import { OpenViduService } from '../../services/openvidu/openvidu.service';
 import { ParticipantService } from '../../services/participant/participant.service';
 import { StorageService } from '../../services/storage/storage.service';
 import { TranslateService } from '../../services/translate/translate.service';
+import { LangOption } from '../../models/lang.model';
 
 /**
  * The **VideoconferenceComponent** is the parent of all OpenVidu components.
@@ -55,11 +56,14 @@ import { TranslateService } from '../../services/translate/translate.service';
  * | :----------------------------: | :-------: | :---------------------------------------------: |
  * | **minimal**                        | `boolean` | {@link MinimalDirective}                        |
  * | **lang**                           | `string`  | {@link LangDirective}                           |
+ * | **langOptions**            		| `LangOption []`  | {@link LangOptionsDirective}             |
  * | **captionsLang**                   | `string`  | {@link CaptionsLangDirective}                   |
+ * | **captionsLangOptions**            | `CaptionsLangOption []`  | {@link CaptionsLangOptionsDirective}                   |
  * | **prejoin**                        | `boolean` | {@link PrejoinDirective}                        |
  * | **participantName**                | `string`  | {@link ParticipantNameDirective}                |
  * | **videoMuted**                     | `boolean` | {@link VideoMutedDirective}                     |
  * | **audioMuted**                     | `boolean` | {@link AudioMutedDirective}                     |
+   | **simulcast**                      | `boolean` | {@link SimulcastDirective}                      |
  * | **toolbarScreenshareButton**       | `boolean` | {@link ToolbarScreenshareButtonDirective}       |
  * | **toolbarFullscreenButton**        | `boolean` | {@link ToolbarFullscreenButtonDirective}        |
  * | **toolbarCaptionsButton** 			| `boolean` | {@link ToolbarCaptionsButtonDirective} 		  |
@@ -72,6 +76,8 @@ import { TranslateService } from '../../services/translate/translate.service';
  * | **streamDisplayParticipantName**   | `boolean` | {@link StreamDisplayParticipantNameDirective}   |
  * | **streamDisplayAudioDetection**    | `boolean` | {@link StreamDisplayAudioDetectionDirective}    |
  * | **streamSettingsButton**           | `boolean` | {@link StreamSettingsButtonDirective}           |
+ * | **streamFrameRate**                | `number` | {@link StreamFrameRateDirective}           |
+ * | **streamResolution**               | `string` | {@link StreamResolutionDirective}           |
  * | **participantPanelItemMuteButton** | `boolean` | {@link ParticipantPanelItemMuteButtonDirective} |
  * | **recordingActivityRecordingList** | `{@link RecordingInfo}[]` | {@link RecordingActivityRecordingsListDirective} |
  * | **recordingActivityRecordingError** | `any` | {@link RecordingActivityRecordingErrorDirective} |
@@ -264,32 +270,44 @@ export class VideoconferenceComponent implements OnInit, OnDestroy, AfterViewIni
 	openviduAngularStreamTemplate: TemplateRef<any>;
 
 	/**
-	 * @param {TokenModel} tokens  The tokens parameter must be an object with `webcam` and `screen` fields.
-	 *  Both of them are `string` type. See {@link TokenModel}
+	 * Tokens parameter is required to grant a participant access to a Session.
+	 * This OpenVidu token will be use by each participant when connecting to a Session.
+	 *
+	 * This input accepts a {@link TokenModel} object type.
+	 *
+	 * @param {TokenModel} tokens  The tokens parameter must be a {@link TokenModel} object.
+	 *
 	 */
 	@Input()
 	set tokens(tokens: TokenModel) {
+		let openviduEdition;
 		if (!tokens || !tokens.webcam) {
-			this.log.w('No tokens received');
-		} else {
-			this.log.w('Tokens received');
-			this.openviduService.setWebcamToken(tokens.webcam);
-
-			const openviduEdition = new URL(tokens.webcam).searchParams.get('edition');
-			if (!!openviduEdition) {
-				this.openviduService.setOpenViduEdition(OpenViduEdition.PRO);
-			} else {
-				this.openviduService.setOpenViduEdition(OpenViduEdition.CE);
-			}
-
-			if (tokens.screen) {
-				this.openviduService.setScreenToken(tokens.screen);
-			} else {
-				this.log.w('No screen token found. Screenshare feature will be disabled');
-			}
-
-			this.start();
+			this.log.e('No tokens received');
+			return;
 		}
+
+		try {
+			openviduEdition = new URL(tokens.webcam).searchParams.get('edition');
+		} catch (error) {
+			this.log.e('Token received does not seem to be valid: ', tokens.webcam);
+			return;
+		}
+
+		this.log.d('Tokens received');
+		if (!!openviduEdition) {
+			this.openviduService.setOpenViduEdition(OpenViduEdition.PRO);
+		} else {
+			this.openviduService.setOpenViduEdition(OpenViduEdition.CE);
+		}
+
+		this.openviduService.setWebcamToken(tokens.webcam);
+		if (tokens.screen) {
+			this.openviduService.setScreenToken(tokens.screen);
+		} else {
+			this.log.w('No screen token found. Screenshare feature will be disabled');
+		}
+
+		this.start();
 	}
 
 	/**
@@ -366,9 +384,36 @@ export class VideoconferenceComponent implements OnInit, OnDestroy, AfterViewIni
 	@Output() onActivitiesPanelDeleteRecordingClicked: EventEmitter<string> = new EventEmitter<string>();
 
 	/**
+	 * Provides event notifications that fire when a participant needs update the recordings information
+	 * (usually when recording is stopped by the session moderator or recording panel is opened) from {@link ActivitiesPanelComponent}.
+	 * The recordings should be updated using the REST API.
+	 */
+	@Output() onActivitiesPanelForceRecordingUpdate: EventEmitter<void> = new EventEmitter<void>();
+
+	/**
 	 * Provides event notifications that fire when play recording button is clicked from {@link ActivitiesPanelComponent}.
 	 */
 	@Output() onActivitiesPanelPlayRecordingClicked: EventEmitter<string> = new EventEmitter<string>();
+
+	/**
+	 * Provides event notifications that fire when start broadcasting button is clicked from {@link ActivitiesPanelComponent}.
+	 */
+	@Output() onActivitiesPanelStartBroadcastingClicked: EventEmitter<string> = new EventEmitter<string>();
+
+	/**
+	 * Provides event notifications that fire when start broadcasting button is clicked from {@link ActivitiesPanelComponent}.
+	 */
+	@Output() onActivitiesPanelStopBroadcastingClicked: EventEmitter<void> = new EventEmitter<void>();
+
+	/**
+	 * Provides event notifications that fire when start broadcasting button is clicked from {@link ToolbarComponent}.
+	 */
+	@Output() onToolbarStartBroadcastingClicked: EventEmitter<void> = new EventEmitter<void>();
+
+	/**
+	 * Provides event notifications that fire when start broadcasting button is clicked from {@link ToolbarComponent}.
+	 */
+	@Output() onToolbarStopBroadcastingClicked: EventEmitter<void> = new EventEmitter<void>();
 
 	/**
 	 * Provides event notifications that fire when OpenVidu Session is created.
@@ -387,6 +432,11 @@ export class VideoconferenceComponent implements OnInit, OnDestroy, AfterViewIni
 	 * See {@link https://docs.openvidu.io/en/stable/openvidu-pro/fault-tolerance/ OpenVidu Pro Fault tolerance}.
 	 */
 	@Output() onNodeCrashed: EventEmitter<void> = new EventEmitter<void>();
+
+	/**
+	 * Provides event notifications that fire when the application language has changed.
+	 */
+	@Output() onLangChanged: EventEmitter<LangOption> = new EventEmitter<LangOption>();
 
 	/**
 	 * @internal
@@ -423,6 +473,7 @@ export class VideoconferenceComponent implements OnInit, OnDestroy, AfterViewIni
 	private externalParticipantName: string;
 	private prejoinSub: Subscription;
 	private participantNameSub: Subscription;
+	private langSub: Subscription;
 	private log: ILogger;
 
 	/**
@@ -448,6 +499,7 @@ export class VideoconferenceComponent implements OnInit, OnDestroy, AfterViewIni
 	async ngOnDestroy() {
 		if (this.prejoinSub) this.prejoinSub.unsubscribe();
 		if (this.participantNameSub) this.participantNameSub.unsubscribe();
+		if (this.langSub) this.langSub.unsubscribe();
 		this.deviceSrv.clear();
 		await this.openviduService.clear();
 	}
@@ -546,6 +598,7 @@ export class VideoconferenceComponent implements OnInit, OnDestroy, AfterViewIni
 			await this.initwebcamPublisher();
 		}
 		this.isSessionInitialized = true;
+		this.onSessionCreated.emit(this.openviduService.getWebcamSession());
 		this.onParticipantCreated.emit(this.participantService.getLocalParticipant());
 		this.loading = false;
 		this.participantReady = true;
@@ -558,14 +611,26 @@ export class VideoconferenceComponent implements OnInit, OnDestroy, AfterViewIni
 	private async initwebcamPublisher(): Promise<void> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const publisher = await this.openviduService.initDefaultPublisher();
+				const pp = {
+					resolution: this.libService.getStreamResolution(),
+					frameRate: this.libService.getStreamFrameRate(),
+					videoSimulcast: this.libService.isSimulcastEnabled()
+				};
+				const publisher = await this.openviduService.initDefaultPublisher(pp);
 
 				if (publisher) {
 					publisher.once('accessDenied', async (e: any) => {
 						await this.handlePublisherError(e);
 						resolve();
 					});
-					publisher.once('accessAllowed', () => resolve());
+					publisher.once('accessAllowed', () => {
+						this.participantService.setMyCameraPublisher(publisher);
+						this.participantService.updateLocalParticipant();
+						resolve();
+					});
+				} else {
+					this.participantService.setMyCameraPublisher(undefined);
+					this.participantService.updateLocalParticipant();
 				}
 			} catch (error) {
 				this.actionService.openDialog(error.name.replace(/_/g, ' '), error.message, true);
@@ -666,6 +731,36 @@ export class VideoconferenceComponent implements OnInit, OnDestroy, AfterViewIni
 	/**
 	 * @internal
 	 */
+
+	onForceRecordingUpdate() {
+		this.onActivitiesPanelForceRecordingUpdate.emit();
+	}
+
+	/**
+	 * @internal
+	 */
+	onStartBroadcastingClicked(broadcastUrl: string) {
+		// if (from === 'toolbar') {
+		// 	this.onToolbarStartRecordingClicked.emit();
+		// } else if (from === 'panel') {
+		this.onActivitiesPanelStartBroadcastingClicked.emit(broadcastUrl);
+		// }
+	}
+
+	/**
+	 * @internal
+	 */
+	onStopBroadcastingClicked(from: string) {
+		if (from === 'toolbar') {
+			this.onToolbarStopBroadcastingClicked.emit();
+		} else if (from === 'panel') {
+			this.onActivitiesPanelStopBroadcastingClicked.emit();
+		}
+	}
+
+	/**
+	 * @internal
+	 */
 	_onSessionCreated(session: Session) {
 		this.onSessionCreated.emit(session);
 	}
@@ -702,6 +797,10 @@ export class VideoconferenceComponent implements OnInit, OnDestroy, AfterViewIni
 
 		this.participantNameSub = this.libService.participantName.subscribe((nickname: string) => {
 			this.externalParticipantName = nickname;
+		});
+
+		this.langSub = this.translateService.langSelectedObs.subscribe((lang: LangOption) => {
+			this.onLangChanged.emit(lang);
 		});
 	}
 }

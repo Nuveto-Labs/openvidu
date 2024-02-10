@@ -10,6 +10,8 @@ import * as ja from '../../lang/ja.json';
 import * as nl from '../../lang/nl.json';
 import * as pt from '../../lang/pt.json';
 import { StorageService } from '../storage/storage.service';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { LangOption } from '../../models/lang.model';
 
 /**
  * @internal
@@ -19,43 +21,53 @@ import { StorageService } from '../storage/storage.service';
 })
 export class TranslateService {
 	private availableLanguages = { en, es, de, fr, cn, hi, it, ja, nl, pt };
-	private langTitles = [
-		{ name: 'English', ISO: 'en' },
-		{ name: 'Español', ISO: 'es' },
-		{ name: 'Deutsch', ISO: 'de' },
-		{ name: 'Français', ISO: 'fr' },
-		{ name: '中国', ISO: 'cn' },
-		{ name: 'हिन्दी', ISO: 'hi' },
-		{ name: 'Italiano', ISO: 'it' },
-		{ name: 'やまと', ISO: 'ja' },
-		{ name: 'Dutch', ISO: 'nl' },
-		{ name: 'Português', ISO: 'pt' }
+	private langOptions: LangOption[] = [
+		{ name: 'English', lang: 'en' },
+		{ name: 'Español', lang: 'es' },
+		{ name: 'Deutsch', lang: 'de' },
+		{ name: 'Français', lang: 'fr' },
+		{ name: '中国', lang: 'cn' },
+		{ name: 'हिन्दी', lang: 'hi' },
+		{ name: 'Italiano', lang: 'it' },
+		{ name: '日本語', lang: 'ja' },
+		{ name: 'Dutch', lang: 'nl' },
+		{ name: 'Português', lang: 'pt' }
 	];
 	private currentLang: any;
-	langSelected: { name: string; ISO: string };
+	langSelected: LangOption | undefined;
+	langSelectedObs: Observable<LangOption | undefined>;
+	private _langSelected: BehaviorSubject<LangOption | undefined> = new BehaviorSubject<LangOption | undefined>(undefined);
 
 	constructor(private storageService: StorageService) {
-		const iso = this.storageService.getLang() || 'en';
-		this.langSelected = this.langTitles.find((lang) => lang.ISO === iso) || this.langTitles[0];
-		this.currentLang = this.availableLanguages[this.langSelected.ISO];
+		this.langSelectedObs = this._langSelected.asObservable();
+		this.updateLangSelected();
 	}
 
-	setLanguage(lang: string) {
-		if(this.langTitles.some(l => l.ISO === lang)){
-			this.currentLang = this.availableLanguages[lang];
-			this.langSelected = this.langTitles.find((l) => l.ISO === lang);
+	setLanguageOptions(options: LangOption[] | undefined) {
+		if (options && options.length > 0) {
+			this.langOptions = options;
+			this.updateLangSelected();
 		}
 	}
 
-	getLangSelected(): { name: string; ISO: string } {
+	async setLanguage(lang: string) {
+		const matchingLang = this.langOptions.find((l) => l.lang === lang);
+		if (matchingLang) {
+			this.currentLang = await this.getLangData(lang);
+			this.langSelected = matchingLang;
+			this._langSelected.next(this.langSelected);
+		}
+	}
+
+	getLangSelected(): LangOption | undefined {
 		return this.langSelected;
 	}
 
 	getLanguagesInfo() {
-		return this.langTitles;
+		return this.langOptions;
 	}
 
-	translate(key: string) {
+	translate(key: string): string {
 		let result = this.currentLang;
 
 		key.split('.').forEach((prop) => {
@@ -66,5 +78,33 @@ export class TranslateService {
 			}
 		});
 		return result;
+	}
+
+	private async updateLangSelected() {
+		const storageLang = this.storageService.getLang();
+		const langOpt = this.langOptions.find((opt) => opt.lang === storageLang);
+		if (storageLang && langOpt) {
+			this.langSelected = langOpt;
+		} else {
+			this.langSelected = this.langOptions[0];
+		}
+		this.currentLang = await this.getLangData(this.langSelected.lang);
+		this._langSelected.next(this.langSelected);
+
+	}
+
+	private async getLangData(lang: string): Promise<void> {
+		if (!(lang in this.availableLanguages)) {
+			// Language not found in default languages options
+			// Try to find it in the assets/lang directory
+			try {
+				const response = await fetch(`assets/lang/${lang}.json`);
+				return await response.json();
+			} catch (error) {
+				console.error(`Not found ${lang}.json in assets/lang`, error);
+			}
+		} else {
+			return this.availableLanguages[lang];
+		}
 	}
 }

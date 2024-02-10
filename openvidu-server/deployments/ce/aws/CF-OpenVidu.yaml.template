@@ -90,6 +90,17 @@ Parameters:
       - c5.12xlarge
       - c5.18xlarge
       - c5.24xlarge
+      - c6a.large
+      - c6a.xlarge
+      - c6a.2xlarge
+      - c6a.4xlarge
+      - c6a.8xlarge
+      - c6a.12xlarge
+      - c6a.16xlarge
+      - c6a.24xlarge
+      - c6a.32xlarge
+      - c6a.48xlarge
+      - c6a.metal
     ConstraintDescription: "Must be a valid EC2 instance type"
 
   KeyName:
@@ -273,12 +284,8 @@ Resources:
                 echo $PublicHostname > /usr/share/openvidu/old-host-name
 
                 # Restart all services
-                pushd /opt/openvidu
-                docker-compose up -d kms
-                until docker-compose ps | grep kms | grep healthy; do
-                    echo "Waiting kms..."
-                done
-                docker-compose up -d
+                pushd "$WORKINGDIR"
+                ./openvidu restart >/dev/null 2>&1 &
                 popd
               mode: "000755"
               owner: "root"
@@ -314,11 +321,7 @@ Resources:
 
           # Start openvidu application
           pushd /opt/openvidu
-          docker-compose up -d kms
-          until docker-compose ps | grep kms | grep healthy; do
-              echo "Waiting kms..."
-          done
-          docker-compose up -d
+          ./openvidu start >/dev/null 2>&1 &
           popd
 
           # Send info to openvidu
@@ -516,7 +519,7 @@ Resources:
       Handler: index.handler
       Role:
         !GetAtt CloudformationLambdaRole.Arn
-      Runtime: python3.7
+      Runtime: python3.11
       Timeout: 900
 
   CloudformationLambdaInvoke:

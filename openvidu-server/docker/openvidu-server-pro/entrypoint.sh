@@ -8,7 +8,6 @@ export OV_CE_DEBUG_LEVEL="${OV_CE_DEBUG_LEVEL:-}"
 export JAVA_OPTIONS=${JAVA_OPTIONS:-}
 export COTURN_IP="${COTURN_IP:-auto-ipv4}"
 
-
 # Generate Coturn shared secret key, if COTURN_SHARED_SECRET_KEY is not defined
 if [[ -z "${COTURN_SHARED_SECRET_KEY}" ]]; then
 
@@ -18,32 +17,52 @@ if [[ -z "${COTURN_SHARED_SECRET_KEY}" ]]; then
         mkdir -p /run/secrets/coturn
 
         # Generate random coturn secret
-        RANDOM_COTURN_SECRET="$(shuf --echo --repeat --zero-terminated --head-count=35  {A..Z} {a..z} {0..9})"
+        RANDOM_COTURN_SECRET="$(shuf --echo --repeat --zero-terminated --head-count=35 {A..Z} {a..z} {0..9})"
 
         # Replace value and generate shared-secret-key file
         sed "s|{{COTURN_SHARED_SECRET_KEY}}|${RANDOM_COTURN_SECRET}|g" \
-            /usr/local/coturn-shared-key.template > /run/secrets/coturn/shared-secret-key
+            /usr/local/coturn-shared-key.template >/run/secrets/coturn/shared-secret-key
     fi
 
     # Read value
-    export "$(grep -v '#' /run/secrets/coturn/shared-secret-key  | grep COTURN_SHARED_SECRET_KEY |
+    export "$(grep -v '#' /run/secrets/coturn/shared-secret-key | grep COTURN_SHARED_SECRET_KEY |
         sed 's/\r$//' | awk '/=/ {print $1}')"
 fi
 
-# Wait for kibana
-if [ -n "${WAIT_KIBANA_URL}" ]; then
-  printf "\n"
-  printf "\n  ======================================="
-  printf "\n      Waiting for Kibana service."
-  printf "\n  ======================================="
-  printf "\n"
+# Don't wait for Kibana if Elasticsearch is disabled
+if [ "${OPENVIDU_PRO_ELASTICSEARCH}" == "false" ]; then
+    unset WAIT_KIBANA_URL
+fi
 
-  until curl --insecure --output /dev/null --silent --head --fail --max-time 10 --connect-timeout 10 "${WAIT_KIBANA_URL}" &> /dev/null
-  do
-    printf "\n  Waiting for kibana in '%s' 'URL'. This may take some minutes, please be patient..." "${WAIT_KIBANA_URL}"
-    sleep 1
-  done
-  printf "\n  ==== Kibana is Ready ===="
+# Wait for Kibana service
+if [ -n "${WAIT_KIBANA_URL:-}" ]; then
+    printf "\n"
+    printf "\n  ======================================="
+    printf "\n      Waiting for Kibana service."
+    printf "\n  ======================================="
+    printf "\n"
+
+    until curl --insecure --output /dev/null --silent --head --fail --max-time 10 --connect-timeout 10 "${WAIT_KIBANA_URL}" &>/dev/null; do
+        printf "\n  Waiting for kibana in '%s' 'URL'. This may take some minutes, please be patient..." "${WAIT_KIBANA_URL}"
+        sleep 1
+    done
+    printf "\n  ==== Kibana is Ready ===="
+fi
+
+if [ -n "${OPENVIDU_ENTERPRISE_HA_NODE_PRIVATE_IP:-}" ]; then
+    printf "\n"
+    printf "\n  ======================================="
+    printf "\n   Waiting for Media Node controller."
+    printf "\n  "
+    printf "\n  Service openvidu/media-node-controller needs to be "
+    printf "\n  available and reachable in host machine at port 3000."
+    printf "\n  ======================================="
+    printf "\n"
+    until curl --insecure --output /dev/null --silent --head --fail --max-time 10 --connect-timeout 10 http://127.0.0.1:3000/media-node/status &>/dev/null; do
+        printf "\n  Waiting for Media Node controller in '%s' 'URL'. Please be patient..." "http://127.0.0.1:3000/media-node/status"
+        sleep 1
+    done
+    printf "\n  ==== Media Node controller is Ready ===="
 fi
 
 # Launch OpenVidu Pro
@@ -70,4 +89,4 @@ fi
 
 # Here we don't expand variables to be interpreted as separated arguments
 # shellcheck disable=SC2086
-java ${JAVA_OPTIONS:-} -jar openvidu-server.jar
+java ${JAVA_OPTIONS:-} -jar openvidu-server-pro-*.jar

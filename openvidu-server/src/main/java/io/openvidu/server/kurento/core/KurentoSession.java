@@ -86,7 +86,7 @@ public class KurentoSession extends Session {
 
 		log.info("SESSION {}: Added participant {}", sessionId, participant);
 
-		if (!participant.isRecorderOrSttParticipant()) {
+		if (!participant.isRecorderOrSttOrBroadcastParticipant()) {
 			kurentoEndpointConfig.getCdr().recordParticipantJoined(participant, sessionId);
 		}
 	}
@@ -160,6 +160,11 @@ public class KurentoSession extends Session {
 	@Override
 	public String getMediaNodeId() {
 		return this.kms.getId();
+	}
+
+	@Override
+	public String getMediaNodeIp() {
+		return this.kms.getIp();
 	}
 
 	public void sendIceCandidate(String participantPrivateId, String senderPublicId, String endpointName,
@@ -381,7 +386,7 @@ public class KurentoSession extends Session {
 
 	public int getNumberOfWebrtcConnections() {
 		return this.getActivePublishers()
-				+ this.participants.values().stream().filter(p -> !p.isRecorderOrSttParticipant())
+				+ this.participants.values().stream().filter(p -> !p.isRecorderOrSttOrBroadcastParticipant())
 						.mapToInt(p -> ((KurentoParticipant) p).getSubscribers().size()).reduce(0, Integer::sum);
 	}
 

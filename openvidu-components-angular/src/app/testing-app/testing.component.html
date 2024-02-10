@@ -38,9 +38,9 @@
 		</span>
 	</div>
 </section>
-<hr *ngIf="showDirectives"/>
+<hr *ngIf="showDirectives" />
 
-<section  *ngIf="showDirectives">
+<section *ngIf="showDirectives">
 	<div>
 		<h2>Attribute directives</h2>
 	</div>
@@ -51,8 +51,12 @@
 		<span>
 			<ul>
 				<li *ngFor="let dir of directive.directives">
-					<mat-checkbox [id]="dir + '-checkbox'" (change)="updateApiDirective(dir, $event.checked)" [checked]="true">
-						{{ dir }}
+					<mat-checkbox
+						[id]="dir.name + '-checkbox'"
+						(change)="updateApiDirective(dir.name, $event.checked)"
+						[checked]="dir.checked"
+					>
+						{{ dir.name }}
 					</mat-checkbox>
 				</li>
 			</ul>
@@ -67,7 +71,6 @@
 <div id="events"></div>
 
 <ov-videoconference *ngIf="!showDirectives" [tokens]="tokens" [prejoin]="false">
-
 	<!-- TOOLBAR -->
 	<ng-template [ngIf]="ovToolbarSelected">
 		<ov-toolbar
@@ -81,6 +84,7 @@
 			[chatPanelButton]="chatPanelBtn"
 			[displaySessionName]="displaySessionId"
 			[displayLogo]="displayLogo"
+			[broadcastingButton]="broadcastingBtn"
 			(onLeaveButtonClicked)="appendElement('onLeaveButtonClicked')"
 			(onCameraButtonClicked)="appendElement('onCameraButtonClicked')"
 			(onMicrophoneButtonClicked)="appendElement('onMicrophoneButtonClicked')"
@@ -141,7 +145,6 @@
 	<!-- PANELS -->
 	<ng-template [ngIf]="ovPanelSelected">
 		<ov-panel *ovPanel id="custom-panels">
-
 			<ng-template [ngIf]="ovAdditionalPanelsSelected">
 				<div *ovAdditionalPanels id="custom-additional-panel">
 					<h1 id="additional-panel-title">NEW PANEL</h1>
@@ -199,7 +202,15 @@
 	</ng-template>
 
 	<ng-template [ngIf]="!ovPanelSelected && ovActivitiesPanelSelected">
-		<ov-activities-panel *ovActivitiesPanel id="custom-activities-panel"></ov-activities-panel>
+		<ov-activities-panel
+			*ovActivitiesPanel
+			[recordingActivity]="recordingActivity"
+			[broadcastingActivity]="broadcastingActivity"
+			id="custom-activities-panel"
+		>
+			<ov-recording-activity *ngIf="recordingActivity"></ov-recording-activity>
+			<ov-broadcasting-activity *ngIf="broadcastingActivity" [broadcastingError]="broadcastingError"></ov-broadcasting-activity>
+		</ov-activities-panel>
 	</ng-template>
 
 	<ng-template [ngIf]="!ovPanelSelected && ovParticipantsPanelSelected">

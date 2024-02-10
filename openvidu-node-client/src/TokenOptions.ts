@@ -18,22 +18,21 @@
 import { OpenViduRole } from './OpenViduRole';
 
 /**
- * @deprecated Use [[ConnectionProperties]] instead
+ * @deprecated Use {@link ConnectionProperties} instead
  */
 export interface TokenOptions {
-
     /**
      * The role assigned to this token
-     * 
+     *
      * @default PUBLISHER
      */
     role?: OpenViduRole;
 
     /**
      * Secure (server-side) data associated to this token. Every client will receive this data in property `Connection.data`. Object `Connection` can be retrieved by subscribing to event `connectionCreated` of Session object.
-     * - If you have provided no data in your clients when calling method `Session.connect(TOKEN, DATA)` (`DATA` not defined), then `Connection.data` will only have this [[TokenOptions.data]] property.
+     * - If you have provided no data in your clients when calling method `Session.connect(TOKEN, DATA)` (`DATA` not defined), then `Connection.data` will only have this {@link TokenOptions.data} property.
      * - If you have provided some data when calling `Session.connect(TOKEN, DATA)` (`DATA` defined), then `Connection.data` will have the following structure: `"CLIENT_DATA%/%SERVER_DATA"`, being `CLIENT_DATA` the second
-     * parameter passed in OpenVidu Browser in method `Session.connect` and `SERVER_DATA` this [[TokenOptions.data]] property.
+     * parameter passed in OpenVidu Browser in method `Session.connect` and `SERVER_DATA` this {@link TokenOptions.data} property.
      */
     data?: string;
 
@@ -59,10 +58,10 @@ export interface TokenOptions {
      * - `allowedFilters`: names of the filters the user owning the token will be able to apply. See [Voice and video filters](/en/stable/advanced-features/filters/)
      */
     kurentoOptions?: {
-        videoMaxRecvBandwidth?: number,
-        videoMinRecvBandwidth?: number,
-        videoMaxSendBandwidth?: number,
-        videoMinSendBandwidth?: number,
-        allowedFilters?: string[]
+        videoMaxRecvBandwidth?: number;
+        videoMinRecvBandwidth?: number;
+        videoMaxSendBandwidth?: number;
+        videoMinSendBandwidth?: number;
+        allowedFilters?: string[];
     };
 }

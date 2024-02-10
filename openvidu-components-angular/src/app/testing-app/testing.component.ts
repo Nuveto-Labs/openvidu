@@ -1,10 +1,10 @@
-import { Component, OnInit } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Component, OnInit } from '@angular/core';
 
+import { ActivatedRoute } from '@angular/router';
+import { BroadcastingError, PanelService } from 'openvidu-angular';
 import { Subscription, throwError as observableThrowError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { ActivatedRoute } from '@angular/router';
-import { PanelService } from 'openvidu-angular';
 
 interface TemplateDirectives {
 	name: string;
@@ -13,7 +13,7 @@ interface TemplateDirectives {
 
 interface APIDirectives {
 	component: string;
-	directives: AttributeDirective[];
+	directives: { name: AttributeDirective; checked: boolean }[];
 }
 
 enum StructuralDirectives {
@@ -39,6 +39,7 @@ export enum AttributeDirective {
 	// AUDIO_MUTED = 'audioMuted',
 	TOOLBAR_SCREENSHARE = 'screenshareButton',
 	TOOLBAR_FULLSCREEN = 'fullscreenButton',
+	TOOLBAR_BROADCASTING = 'broadcastingButton',
 	TOOLBAR_LEAVE = 'leaveButton',
 	TOOLBAR_PARTICIPANTS_PANEL = 'participantsPanelButton',
 	TOOLBAR_ACTIVITIES_PANEL = 'activitiesPanelButton',
@@ -48,7 +49,10 @@ export enum AttributeDirective {
 	STREAM_PARTICIPANT_NAME = 'displayParticipantName',
 	STREAM_AUDIO_DETECTION = 'displayAudioDetection',
 	STREAM_SETTINGS = 'settingsButton',
-	PARTICIPANT_ITEM_MUTE = 'muteButton'
+	PARTICIPANT_ITEM_MUTE = 'muteButton',
+	ACTIVITIES_PANEL_RECORDING_ACTIVITY = 'recordingActivity',
+	ACTIVITIES_PANEL_BROADCASTING_ACTIVITY = 'broadcastingActivity',
+	ACTIVITIES_PANEL_BROADCASTING_ERROR = 'broadcastingError'
 }
 
 @Component({
@@ -92,27 +96,36 @@ export class TestingComponent implements OnInit {
 		{
 			component: StructuralDirectives.TOOLBAR,
 			directives: [
-				AttributeDirective.TOOLBAR_CHAT_PANEL,
-				AttributeDirective.TOOLBAR_DISPLAY_LOGO,
-				AttributeDirective.TOOLBAR_DISPLAY_SESSION,
-				AttributeDirective.TOOLBAR_FULLSCREEN,
-				AttributeDirective.TOOLBAR_LEAVE,
-				AttributeDirective.TOOLBAR_PARTICIPANTS_PANEL,
-				AttributeDirective.TOOLBAR_ACTIVITIES_PANEL,
-				AttributeDirective.TOOLBAR_SCREENSHARE
+				{ name: AttributeDirective.TOOLBAR_CHAT_PANEL, checked: true },
+				{ name: AttributeDirective.TOOLBAR_DISPLAY_LOGO, checked: true },
+				{ name: AttributeDirective.TOOLBAR_DISPLAY_SESSION, checked: true },
+				{ name: AttributeDirective.TOOLBAR_FULLSCREEN, checked: true },
+				{ name: AttributeDirective.TOOLBAR_BROADCASTING, checked: true },
+				{ name: AttributeDirective.TOOLBAR_LEAVE, checked: true },
+				{ name: AttributeDirective.TOOLBAR_PARTICIPANTS_PANEL, checked: true },
+				{ name: AttributeDirective.TOOLBAR_ACTIVITIES_PANEL, checked: true },
+				{ name: AttributeDirective.TOOLBAR_SCREENSHARE, checked: true }
 			]
 		},
 		{
 			component: StructuralDirectives.STREAM,
 			directives: [
-				AttributeDirective.STREAM_AUDIO_DETECTION,
-				AttributeDirective.STREAM_PARTICIPANT_NAME,
-				AttributeDirective.STREAM_SETTINGS
+				{ name: AttributeDirective.STREAM_AUDIO_DETECTION, checked: true },
+				{ name: AttributeDirective.STREAM_PARTICIPANT_NAME, checked: true },
+				{ name: AttributeDirective.STREAM_SETTINGS, checked: true }
 			]
 		},
 		{
 			component: StructuralDirectives.PARTICIPANTS_PANEL_ITEM,
-			directives: [AttributeDirective.PARTICIPANT_ITEM_MUTE]
+			directives: [{ name: AttributeDirective.PARTICIPANT_ITEM_MUTE, checked: true }]
+		},
+		{
+			component: StructuralDirectives.ACTIVITIES_PANEL,
+			directives: [
+				{ name: AttributeDirective.ACTIVITIES_PANEL_RECORDING_ACTIVITY, checked: true },
+				{ name: AttributeDirective.ACTIVITIES_PANEL_BROADCASTING_ACTIVITY, checked: true },
+				{ name: AttributeDirective.ACTIVITIES_PANEL_BROADCASTING_ERROR, checked: false }
+			]
 		}
 	];
 
@@ -138,15 +151,19 @@ export class TestingComponent implements OnInit {
 	participantsPanelBtn = true;
 	activitiesPanelBtn = true;
 	screenshareBtn = true;
-
 	audioDetection = true;
 	participantName = true;
 	settingsBtn = true;
 	participantItemMuteBtn = true;
+	broadcastingActivity = true;
+	broadcastingBtn = true;
 
 	tokens: { webcam: any; screen: any };
 
 	subscription: Subscription;
+	broadcastingError: BroadcastingError | undefined;
+
+	recordingActivity = true;
 
 	constructor(private httpClient: HttpClient, private route: ActivatedRoute, private panelService: PanelService) {}
 
@@ -247,6 +264,10 @@ export class TestingComponent implements OnInit {
 				this.fullscreenBtn = value;
 				break;
 
+			case AttributeDirective.TOOLBAR_BROADCASTING:
+				this.broadcastingBtn = value;
+				break;
+
 			case AttributeDirective.TOOLBAR_LEAVE:
 				this.leaveBtn = value;
 				break;
@@ -271,6 +292,18 @@ export class TestingComponent implements OnInit {
 				break;
 			case AttributeDirective.PARTICIPANT_ITEM_MUTE:
 				this.participantItemMuteBtn = value;
+				break;
+			case AttributeDirective.ACTIVITIES_PANEL_RECORDING_ACTIVITY:
+				this.recordingActivity = value;
+				break;
+			case AttributeDirective.ACTIVITIES_PANEL_BROADCASTING_ACTIVITY:
+				this.broadcastingActivity = value;
+				break;
+
+			case AttributeDirective.ACTIVITIES_PANEL_BROADCASTING_ERROR:
+				this.broadcastingError = { message: 'TEST_ERROR', broadcastAvailable: true };
+				break;
+			default:
 				break;
 		}
 	}
@@ -297,7 +330,7 @@ export class TestingComponent implements OnInit {
 
 	async getToken(sessionId: string): Promise<string> {
 		const id = await this.createSession(sessionId);
-		return await this.createToken(id);
+		return await this.createConnection(id);
 	}
 
 	createSession(sessionId: string) {
@@ -342,9 +375,9 @@ export class TestingComponent implements OnInit {
 		});
 	}
 
-	createToken(sessionId): Promise<string> {
+	createConnection(sessionId): Promise<string> {
 		return new Promise((resolve, reject) => {
-			const body = {};
+			const body = { role: 'MODERATOR' };
 			const options = {
 				headers: new HttpHeaders({
 					Authorization: 'Basic ' + btoa('OPENVIDUAPP:' + this.OPENVIDU_SERVER_SECRET),

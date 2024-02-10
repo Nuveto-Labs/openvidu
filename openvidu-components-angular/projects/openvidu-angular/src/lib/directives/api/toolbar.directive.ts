@@ -125,6 +125,66 @@ export class ToolbarRecordingButtonDirective implements AfterViewInit, OnDestroy
 }
 
 /**
+ * The **broadcastingButton** directive allows show/hide the start/stop broadcasting toolbar button.
+ *
+ * Default: `true`
+ *
+ * It can be used in the parent element {@link VideoconferenceComponent} specifying the name of the `toolbar` component:
+ *
+ * @example
+ * <ov-videoconference [toolbarBroadcastingButton]="false"></ov-videoconference>
+ *
+ * \
+ * And it also can be used in the {@link ToolbarComponent}.
+ * @example
+ * <ov-toolbar [broadcastingButton]="false"></ov-toolbar>
+ *
+ */
+ @Directive({
+	selector: 'ov-videoconference[toolbarBroadcastingButton], ov-toolbar[broadcastingButton]'
+})
+export class ToolbarBroadcastingButtonDirective implements AfterViewInit, OnDestroy {
+	/**
+	 * @ignore
+	 */
+	@Input() set toolbarBroadcastingButton(value: boolean) {
+		this.broadcastingValue = value;
+		this.update(this.broadcastingValue);
+	}
+	/**
+	 * @ignore
+	 */
+	@Input() set broadcastingButton(value: boolean) {
+		this.broadcastingValue = value;
+		this.update(this.broadcastingValue);
+	}
+	private broadcastingValue: boolean = true;
+
+	/**
+	 * @ignore
+	 */
+	constructor(public elementRef: ElementRef, private libService: OpenViduAngularConfigService) {}
+
+	ngAfterViewInit() {
+		this.update(this.broadcastingValue);
+	}
+
+	ngOnDestroy(): void {
+		this.clear();
+	}
+	private clear() {
+		this.broadcastingValue = true;
+		this.update(true);
+	}
+
+	private update(value: boolean) {
+		if (this.libService.broadcastingButton.getValue() !== value) {
+			this.libService.broadcastingButton.next(value);
+		}
+	}
+}
+
+/**
  * The **fullscreenButton** directive allows show/hide the fullscreen toolbar button.
  *
  * Default: `true`

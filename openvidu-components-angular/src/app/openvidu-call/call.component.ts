@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RecordingInfo, RecordingService, TokenModel } from 'openvidu-angular';
+import { BroadcastingService, BroadcastingStatus, RecordingInfo, RecordingService, RecordingStatus, TokenModel, LangOption } from 'openvidu-angular';
 import { RestService } from '../services/rest.service';
 
 @Component({
@@ -8,7 +8,6 @@ import { RestService } from '../services/rest.service';
 	styleUrls: ['./call.component.scss']
 })
 export class CallComponent implements OnInit {
-
 	sessionId = 'daily-call';
 	tokens: TokenModel;
 
@@ -17,8 +16,13 @@ export class CallComponent implements OnInit {
 	isSessionAlive: boolean = false;
 	recordingList: RecordingInfo[] = [];
 	recordingError: any;
+	broadcastingError: any;
 
-	constructor(private restService: RestService, private recordingService: RecordingService) { }
+	constructor(
+		private restService: RestService,
+		private recordingService: RecordingService,
+		private broadcastingService: BroadcastingService
+	) {}
 
 	async ngOnInit() {
 		await this.requestForTokens();
@@ -81,25 +85,54 @@ export class CallComponent implements OnInit {
 		console.log('TOOLBAR LEAVE CLICKED');
 	}
 
+	onLangChanged(lang: LangOption) {
+		console.warn('LANG CHANGED', lang);
+	}
+
+	async onStartBroadcastingClicked(broadcastUrl: string) {
+		console.log('START STREAMING', broadcastUrl);
+		if (!broadcastUrl) {
+			console.error('Broadcasting URL is empty');
+			return;
+		}
+		try {
+			this.broadcastingError = null;
+			const resp = await this.restService.startBroadcasting(broadcastUrl);
+			console.log('Broadcasting response ', resp);
+		} catch (error) {
+			console.error(error);
+			this.broadcastingError = error.error;
+		}
+	}
+
+	async onStopBroadcastingClicked() {
+		console.log('STOP STREAMING');
+		try {
+			this.broadcastingError = null;
+			const resp = await this.restService.stopBroadcasting();
+			console.log('Broadcasting response ', resp);
+		} catch (error) {
+			console.error(error);
+			this.broadcastingError = error.message || error;
+		}
+	}
+
 	async onStartRecordingClicked() {
 		console.warn('START RECORDING CLICKED');
 		try {
 			await this.restService.startRecording(this.sessionId);
 		} catch (error) {
 			this.recordingError = error;
-
 		}
 	}
 	async onStopRecordingClicked() {
 		console.warn('STOP RECORDING CLICKED');
 		try {
-			// await this.restService.startRecording(this.sessionId);
-
 			this.recordingList = await this.restService.stopRecording(this.sessionId);
 			console.log('RECORDING LIST ', this.recordingList);
 		} catch (error) {
+			console.log(await this.restService.getRecordings())
 			this.recordingError = error;
-
 		}
 	}
 
@@ -108,22 +141,27 @@ export class CallComponent implements OnInit {
 
 		try {
 			this.recordingList = await this.restService.deleteRecording(recordingId);
-
 		} catch (error) {
 			this.recordingError = error;
 		}
 	}
 
-	private async requestForTokens() {
-		const response = await this.restService.getTokensFromBackend(this.sessionId);
-		this.recordingList = response.recordings;
-		this.tokens = {
-			webcam: response.cameraToken,
-			screen: response.screenToken
-		};
-
-		console.log('Token requested: ', this.tokens);
-
+	async onForceRecordingUpdate() {
+		console.warn('FORCE RECORDING UPDATE');
+		this.recordingList = await this.restService.getRecordings();
 	}
 
+	private async requestForTokens() {
+		const { broadcastingEnabled, recordingEnabled, recordings, cameraToken, screenToken, isRecordingActive, isBroadcastingActive } =
+			await this.restService.getTokensFromBackend(this.sessionId);
+		this.recordingList = recordings;
+		this.tokens = {
+			webcam: cameraToken,
+			screen: screenToken
+		};
+		if (isRecordingActive) this.recordingService.updateStatus(RecordingStatus.STARTED);
+		if (isBroadcastingActive) this.broadcastingService.updateStatus(BroadcastingStatus.STARTED);
+
+		console.log('Token requested: ', this.tokens);
+	}
 }

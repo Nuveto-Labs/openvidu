@@ -17,12 +17,13 @@
 
 package io.openvidu.java.client;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import com.google.gson.JsonObject;
 
 import io.openvidu.java.client.Recording.OutputMode;
-import io.openvidu.java.client.utils.FormatChecker;
 
 /**
  * See
@@ -472,6 +473,9 @@ public class RecordingProperties {
 		return json;
 	}
 
+	/**
+	 * @hidden
+	 */
 	public static RecordingProperties.Builder fromJson(Map<String, ?> params, RecordingProperties defaultProps)
 			throws RuntimeException {
 
@@ -559,7 +563,7 @@ public class RecordingProperties {
 		}
 
 		if (nameParam != null && !nameParam.isEmpty()) {
-			if (!FormatChecker.isValidRecordingName(nameParam)) {
+			if (!Utils.isValidRecordingName(nameParam)) {
 				throw new IllegalArgumentException(
 						"Parameter 'name' is wrong. Must be an alphanumeric string [a-zA-Z0-9_-~]+");
 			}
@@ -620,7 +624,7 @@ public class RecordingProperties {
 			}
 
 			if (resolutionParam != null) {
-				if (!FormatChecker.isAcceptableRecordingResolution(resolutionParam)) {
+				if (!Utils.isAcceptableRecordingResolution(resolutionParam)) {
 					throw new IllegalStateException(
 							"Wrong 'resolution' parameter. Acceptable values from 100 to 1999 for both width and height");
 				}
@@ -630,7 +634,7 @@ public class RecordingProperties {
 			}
 
 			if (frameRateParam != null) {
-				if (!FormatChecker.isAcceptableRecordingFrameRate(frameRateParam.intValue())) {
+				if (!Utils.isAcceptableRecordingFrameRate(frameRateParam.intValue())) {
 					throw new IllegalStateException(
 							"Wrong 'frameRate' parameter. Acceptable values are within range [1,120]");
 				}
@@ -640,7 +644,7 @@ public class RecordingProperties {
 			}
 
 			if (shmSizeParam != null) {
-				if (!FormatChecker.isAcceptableRecordingShmSize(shmSizeParam)) {
+				if (!Utils.isAcceptableRecordingShmSize(shmSizeParam)) {
 					throw new IllegalStateException("Wrong 'shmSize' parameter. Must be 134217728 (128 MB) minimum");
 				}
 				shmSizeFinal = shmSizeParam;
@@ -706,6 +710,15 @@ public class RecordingProperties {
 	 */
 	public final static boolean IS_COMPOSED(OutputMode outputMode) {
 		return (OutputMode.COMPOSED.equals(outputMode) || OutputMode.COMPOSED_QUICK_START.equals(outputMode));
+	}
+
+	/**
+	 * @hidden
+	 */
+	public final static Map<String, ?> removeNonBroadcastProperties(Map<String, ?> params) {
+		List<String> nonBroadcastProps = Arrays.asList(new String[] { "outputMode", "name", "ignoreFailedStreams" });
+		nonBroadcastProps.forEach(p -> params.remove(p));
+		return params;
 	}
 
 }

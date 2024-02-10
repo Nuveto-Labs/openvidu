@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 MEDIA_NODE_FOLDER=kms
-MEDIA_NODE_VERSION=v2.24.0
-OPENVIDU_UPGRADABLE_VERSION="2.23"
+MEDIA_NODE_VERSION=master
+OPENVIDU_UPGRADABLE_VERSION="2.29"
 BEATS_FOLDER=${MEDIA_NODE_FOLDER}/beats
 OPENVIDU_RECORDINGS_FOLDER="/opt/openvidu/recordings"
 DOWNLOAD_URL=https://raw.githubusercontent.com/OpenVidu/openvidu/${MEDIA_NODE_VERSION}
@@ -114,12 +114,14 @@ new_media_node_installation() {
      METRICBEAT_IMAGE=$(grep METRICBEAT_IMAGE docker-compose.yml | cut -d"=" -f2)
      FILEBEAT_IMAGE=$(grep FILEBEAT_IMAGE docker-compose.yml | cut -d"=" -f2)
      OPENVIDU_RECORDING_IMAGE=$(grep OPENVIDU_RECORDING_IMAGE docker-compose.yml | cut -d"=" -f2)
+     COTURN_IMAGE="$(grep COTURN_IMAGE docker-compose.yml | cut -d"=" -f2)"
      SPEECH_TO_TEXT_IMAGE=$(grep SPEECH_TO_TEXT_IMAGE docker-compose.yml | cut -d"=" -f2)
      docker pull "$KMS_IMAGE" || fatal "Error while pulling docker image: $KMS_IMAGE"
      docker pull "$MEDIASOUP_IMAGE" || fatal "Error while pulling docker image: $MEDIASOUP_IMAGE"
      docker pull "$METRICBEAT_IMAGE" || fatal "Error while pulling docker image: $METRICBEAT_IMAGE"
      docker pull "$FILEBEAT_IMAGE" || fatal "Error while pulling docker image: $FILEBEAT_IMAGE"
      docker pull "$OPENVIDU_RECORDING_IMAGE" || fatal "Error while pulling docker image: $OPENVIDU_RECORDING_IMAGE"
+     docker pull "$COTURN_IMAGE" || fatal "Error while pulling docker image: $COTURN_IMAGE"
      docker pull "$SPEECH_TO_TEXT_IMAGE" || fatal "Error while pulling docker image: $SPEECH_TO_TEXT_IMAGE"
      docker-compose pull || true
 
@@ -363,17 +365,24 @@ upgrade_media_node() {
 # Check docker and docker-compose installation
 if ! command -v docker > /dev/null; then
      echo "You don't have docker installed, please install it and re-run the command"
-     exit 0
+     exit 1
+else
+     # Check version of docker is equal or higher than 20.10.10
+     DOCKER_VERSION=$(docker version --format '{{.Server.Version}}' | sed "s/-rc[0-9]*//")
+     if ! printf '%s\n%s\n' "20.10.10" "$DOCKER_VERSION" | sort -V -C; then
+          echo "You need a docker version equal or higher than 20.10.10, please update your docker and re-run the command"; \
+          exit 1
+     fi
 fi
 
 if ! command -v docker-compose > /dev/null; then
      echo "You don't have docker-compose installed, please install it and re-run the command"
-     exit 0
+     exit 1
 else
      COMPOSE_VERSION=$(docker-compose version --short | sed "s/-rc[0-9]*//")
      if ! printf '%s\n%s\n' "1.24" "$COMPOSE_VERSION" | sort -V -C; then
           echo "You need a docker-compose version equal or higher than 1.24, please update your docker-compose and re-run the command"; \
-          exit 0
+          exit 1
      fi
 fi
 

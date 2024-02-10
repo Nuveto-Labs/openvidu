@@ -59,6 +59,7 @@
 		"CLOSE": "Cerrar",
 		"SEE_MORE": "Ver más",
 		"PRO_FEATURE": "Esta funcionalidad es parte de OpenVidu PRO",
+		"PAID_FEATURE": "Esta función es parte del servicio comercial de OpenVidu. Contáctenos a través de commercial@openvidu.io para obtener más información",
 		"CHAT": {
 			"TITLE": "Chat",
 			"YOU": "Tú",
@@ -101,6 +102,16 @@
 			"DOWNLOAD": "Descargar",
 			"RECORDINGS": "GRABACIONES",
 			"NO_MODERATOR": "Sólo el MODERADOR puede iniciar la grabación"
+		},
+		"STREAMING": {
+			"TITLE": "Streaming",
+			"SUBTITLE": "Comparte tu llamada con tu público",
+			"CONTENT_SUBTITLE": "OpenVidu necesita la url de tu plataforma de streaming.",
+			"START": "Empezar streaming",
+			"STOP": "Finalizar streaming",
+			"URL": "Inserta tu url de streaming",
+			"CANCEL": "Cancelar",
+			"NO_MODERATOR": "Solo el MODERADOR puede iniciar el streaming"
 		}
 	},
 	"ERRORS": {
@@ -112,6 +123,7 @@
 		"SCREEN_SHARING": "Hubo un error compartiendo pantalla",
 		"SCREEN_SUPPORT": "Tu navegador no soporta la pantalla compartida",
 		"MEDIA_ACCESS": "No se ha podido acceder a tus dispositivos",
-		"DEVICE_NOT_FOUND": "No se han encontrado dispositivos de audio o video. Por favor, conecta al menos uno."
+		"DEVICE_NOT_FOUND": "No se han encontrado dispositivos de audio o video. Por favor, conecta al menos uno.",
+		"SST_CONNECTION": "Conexión perdida. Reconectando al servicio de transcripción a texto..."
 	}
 }

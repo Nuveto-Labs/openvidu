@@ -7,7 +7,7 @@
 	</div>
 
 	<div class="activities-body-container" fxFlex="75%" fxLayoutAlign="space-evenly none">
-		<mat-accordion>
+		<mat-accordion [multi]="false">
 			<ov-recording-activity
 				*ngIf="showRecordingActivity"
 				id="recording-activity"
@@ -15,7 +15,15 @@
 				(onStartRecordingClicked)="_onStartRecordingClicked()"
 				(onStopRecordingClicked)="_onStopRecordingClicked()"
 				(onDeleteRecordingClicked)="_onDeleteRecordingClicked($event)"
+				(onForceRecordingUpdate)="_onForceRecordingUpdate()"
 			></ov-recording-activity>
+			<ov-broadcasting-activity
+				*ngIf="showBroadcastingActivity"
+				id="broadcasting-activity"
+				[expanded]="expandedPanel === 'broadcasting'"
+				(onStartBroadcastingClicked)="_onStartBroadcastingClicked($event)"
+				(onStopBroadcastingClicked)="_onStopBroadcastingClicked()"
+			></ov-broadcasting-activity>
 		</mat-accordion>
 	</div>
 </div>

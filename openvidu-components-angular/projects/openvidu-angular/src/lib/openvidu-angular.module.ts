@@ -49,7 +49,8 @@ import { AvatarProfileComponent } from './components/avatar-profile/avatar-profi
 import { CaptionsComponent } from './components/captions/captions.component';
 import { ProFeatureDialogTemplateComponent } from './components/dialogs/pro-feature-dialog.component';
 import { ActivitiesPanelComponent } from './components/panel/activities-panel/activities-panel.component';
-import { RecordingActivityComponent } from './components/panel/activities-panel/recording-activity-panel/recording-activity.component';
+import { BroadcastingActivityComponent } from './components/panel/activities-panel/broadcasting-activity/broadcasting-activity.component';
+import { RecordingActivityComponent } from './components/panel/activities-panel/recording-activity/recording-activity.component';
 import { BackgroundEffectsPanelComponent } from './components/panel/background-effects-panel/background-effects-panel.component';
 import { SettingsPanelComponent } from './components/panel/settings-panel/settings-panel.component';
 import { AudioDevicesComponent } from './components/settings/audio-devices/audio-devices.component';
@@ -69,6 +70,8 @@ const publicComponents = [
 	ToolbarComponent,
 	PanelComponent,
 	ActivitiesPanelComponent,
+    RecordingActivityComponent,
+    BroadcastingActivityComponent,
 	ParticipantsPanelComponent,
 	ParticipantPanelItemComponent,
 	ChatPanelComponent,
@@ -92,7 +95,6 @@ const privateComponents = [
 	AudioDevicesComponent,
 	NicknameInputComponent,
 	LangSelectorComponent,
-	RecordingActivityComponent,
 	CaptionsSettingComponent
 ];
 
@@ -141,6 +143,7 @@ const privateComponents = [
         ParticipantStreamsPipe,
         DurationFromSecondsPipe,
         StreamTypesEnabledPipe,
+        TranslatePipe,
         CommonModule,
         OpenViduAngularDirectiveModule,
         ApiDirectiveModule

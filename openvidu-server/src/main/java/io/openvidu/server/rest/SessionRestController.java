@@ -21,6 +21,7 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -101,7 +102,7 @@ public class SessionRestController {
 		try {
 			sessionProperties = getSessionPropertiesFromParams(params).build();
 		} catch (Exception e) {
-			return this.generateErrorResponse(e.getMessage(), "/sessions", HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse(e.getMessage(), "/sessions", HttpStatus.BAD_REQUEST);
 		}
 
 		String sessionId;
@@ -254,13 +255,13 @@ public class SessionRestController {
 							+ " closing lock to be available for closing from DELETE " + RequestMappings.API
 							+ "/sessions";
 					log.error(errorMsg);
-					return this.generateErrorResponse(errorMsg, "/sessions", HttpStatus.BAD_REQUEST);
+					return SessionRestController.generateErrorResponse(errorMsg, "/sessions", HttpStatus.BAD_REQUEST);
 				}
 			} catch (InterruptedException e) {
 				String errorMsg = "InterruptedException while waiting for Session " + sessionId
 						+ " closing lock to be available for closing from DELETE " + RequestMappings.API + "/sessions";
 				log.error(errorMsg);
-				return this.generateErrorResponse(errorMsg, "/sessions", HttpStatus.BAD_REQUEST);
+				return SessionRestController.generateErrorResponse(errorMsg, "/sessions", HttpStatus.BAD_REQUEST);
 			}
 		} else {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -283,7 +284,7 @@ public class SessionRestController {
 		try {
 			connectionProperties = getConnectionPropertiesFromParams(params).build();
 		} catch (Exception e) {
-			return this.generateErrorResponse(e.getMessage(), "/sessions/" + sessionId + "/connection",
+			return SessionRestController.generateErrorResponse(e.getMessage(), "/sessions/" + sessionId + "/connection",
 					HttpStatus.BAD_REQUEST);
 		}
 		switch (connectionProperties.getType()) {
@@ -292,8 +293,8 @@ public class SessionRestController {
 		case IPCAM:
 			return this.newIpcamConnection(session, connectionProperties);
 		default:
-			return this.generateErrorResponse("Wrong type parameter", "/sessions/" + sessionId + "/connection",
-					HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse("Wrong type parameter",
+					"/sessions/" + sessionId + "/connection", HttpStatus.BAD_REQUEST);
 		}
 	}
 
@@ -371,8 +372,8 @@ public class SessionRestController {
 	public ResponseEntity<?> startRecording(@RequestBody Map<String, ?> params) {
 
 		if (params == null) {
-			return this.generateErrorResponse("Error in body parameters. Cannot be empty", "/recordings/start",
-					HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse("Error in body parameters. Cannot be empty",
+					"/recordings/start", HttpStatus.BAD_REQUEST);
 		}
 
 		log.info("REST API: POST {}/recordings/start {}", RequestMappings.API, params.toString());
@@ -386,14 +387,14 @@ public class SessionRestController {
 		try {
 			sessionId = (String) params.get("session");
 		} catch (Exception e) {
-			return this.generateErrorResponse("Type error in parameter \"session\"", "/recordings/start",
-					HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse("Type error in parameter \"session\"",
+					"/recordings/start", HttpStatus.BAD_REQUEST);
 		}
 
 		if (sessionId == null) {
 			// "session" parameter not found
-			return this.generateErrorResponse("\"session\" parameter is mandatory", "/recordings/start",
-					HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse("\"session\" parameter is mandatory",
+					"/recordings/start", HttpStatus.BAD_REQUEST);
 		}
 
 		Session session = sessionManager.getSession(sessionId);
@@ -414,7 +415,7 @@ public class SessionRestController {
 		}
 		if (!(MediaMode.ROUTED.equals(session.getSessionProperties().mediaMode()))
 				|| this.recordingManager.sessionIsBeingRecorded(session.getSessionId())) {
-			// Session is not in ROUTED MediMode or it is already being recorded
+			// Session is not in ROUTED MediaMode or it is already being recorded
 			return new ResponseEntity<>(HttpStatus.CONFLICT);
 		}
 		if (session.getParticipants().isEmpty()) {
@@ -426,9 +427,10 @@ public class SessionRestController {
 		try {
 			recordingProperties = getRecordingPropertiesFromParams(params, session).build();
 		} catch (IllegalStateException e) {
-			return this.generateErrorResponse(e.getMessage(), "/sessions", HttpStatus.UNPROCESSABLE_ENTITY);
+			return SessionRestController.generateErrorResponse(e.getMessage(), "/sessions",
+					HttpStatus.UNPROCESSABLE_ENTITY);
 		} catch (RuntimeException e) {
-			return this.generateErrorResponse(e.getMessage(), "/sessions", HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse(e.getMessage(), "/sessions", HttpStatus.BAD_REQUEST);
 		}
 
 		try {
@@ -556,7 +558,7 @@ public class SessionRestController {
 	public ResponseEntity<String> newToken(@RequestBody Map<String, ?> params) {
 
 		if (params == null) {
-			return this.generateErrorResponse("Error in body parameters. Cannot be empty", "/tokens",
+			return SessionRestController.generateErrorResponse("Error in body parameters. Cannot be empty", "/tokens",
 					HttpStatus.BAD_REQUEST);
 		}
 
@@ -566,11 +568,13 @@ public class SessionRestController {
 		try {
 			sessionId = (String) params.get("session");
 		} catch (ClassCastException e) {
-			return this.generateErrorResponse("Type error in some parameter", "/tokens", HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse("Type error in some parameter", "/tokens",
+					HttpStatus.BAD_REQUEST);
 		}
 
 		if (sessionId == null) {
-			return this.generateErrorResponse("\"session\" parameter is mandatory", "/tokens", HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse("\"session\" parameter is mandatory", "/tokens",
+					HttpStatus.BAD_REQUEST);
 		}
 
 		log.warn("Token API is deprecated. Use Connection API instead (POST {}/sessions/{}/connection)",
@@ -578,7 +582,8 @@ public class SessionRestController {
 
 		final Session session = this.sessionManager.getSessionWithNotActive(sessionId);
 		if (session == null) {
-			return this.generateErrorResponse("Session " + sessionId + " not found", "/tokens", HttpStatus.NOT_FOUND);
+			return SessionRestController.generateErrorResponse("Session " + sessionId + " not found", "/tokens",
+					HttpStatus.NOT_FOUND);
 		}
 
 		ConnectionProperties connectionProperties;
@@ -586,14 +591,14 @@ public class SessionRestController {
 		try {
 			connectionProperties = getConnectionPropertiesFromParams(params).build();
 		} catch (Exception e) {
-			return this.generateErrorResponse(e.getMessage(), "/sessions/" + sessionId + "/connection",
+			return SessionRestController.generateErrorResponse(e.getMessage(), "/sessions/" + sessionId + "/connection",
 					HttpStatus.BAD_REQUEST);
 		}
 		ResponseEntity<?> entity = this.newWebrtcConnection(session, connectionProperties);
 		JsonObject jsonResponse = JsonParser.parseString(entity.getBody().toString()).getAsJsonObject();
 
 		if (jsonResponse.has("error")) {
-			return this.generateErrorResponse(jsonResponse.get("message").getAsString(), "/tokens",
+			return SessionRestController.generateErrorResponse(jsonResponse.get("message").getAsString(), "/tokens",
 					HttpStatus.valueOf(jsonResponse.get("status").getAsInt()));
 		} else {
 			String connectionId = jsonResponse.get("id").getAsString();
@@ -639,7 +644,7 @@ public class SessionRestController {
 	public ResponseEntity<?> signal(@RequestBody Map<String, ?> params) {
 
 		if (params == null) {
-			return this.generateErrorResponse("Error in body parameters. Cannot be empty", "/signal",
+			return SessionRestController.generateErrorResponse("Error in body parameters. Cannot be empty", "/signal",
 					HttpStatus.BAD_REQUEST);
 		}
 
@@ -655,14 +660,16 @@ public class SessionRestController {
 			type = (String) params.get("type");
 			data = (String) params.get("data");
 		} catch (ClassCastException e) {
-			return this.generateErrorResponse("Type error in some parameter", "/signal", HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse("Type error in some parameter", "/signal",
+					HttpStatus.BAD_REQUEST);
 		}
 
 		JsonObject completeMessage = new JsonObject();
 
 		if (sessionId == null) {
 			// "session" parameter not found
-			return this.generateErrorResponse("\"session\" parameter is mandatory", "/signal", HttpStatus.BAD_REQUEST);
+			return SessionRestController.generateErrorResponse("\"session\" parameter is mandatory", "/signal",
+					HttpStatus.BAD_REQUEST);
 		}
 		Session session = sessionManager.getSession(sessionId);
 		if (session == null) {
@@ -689,16 +696,16 @@ public class SessionRestController {
 				JsonArray toArray = gson.toJsonTree(to).getAsJsonArray();
 				completeMessage.add("to", toArray);
 			} catch (IllegalStateException exception) {
-				return this.generateErrorResponse("\"to\" parameter is not a valid JSON array", "/signal",
-						HttpStatus.BAD_REQUEST);
+				return SessionRestController.generateErrorResponse("\"to\" parameter is not a valid JSON array",
+						"/signal", HttpStatus.BAD_REQUEST);
 			}
 		}
 
 		try {
 			sessionManager.sendMessage(completeMessage.toString(), session);
 		} catch (OpenViduException e) {
-			return this.generateErrorResponse("\"to\" array has no valid connection identifiers", "/signal",
-					HttpStatus.NOT_ACCEPTABLE);
+			return SessionRestController.generateErrorResponse("\"to\" array has no valid connection identifiers",
+					"/signal", HttpStatus.NOT_ACCEPTABLE);
 		}
 
 		return new ResponseEntity<>(HttpStatus.OK);
@@ -720,7 +727,7 @@ public class SessionRestController {
 				return new ResponseEntity<>(token.toJsonAsParticipant().toString(), RestUtils.getResponseHeaders(),
 						HttpStatus.OK);
 			} catch (Exception e) {
-				return this.generateErrorResponse(
+				return SessionRestController.generateErrorResponse(
 						"Error creating Connection for session " + session.getSessionId() + ": " + e.getMessage(),
 						REQUEST_PATH, HttpStatus.INTERNAL_SERVER_ERROR);
 			} finally {
@@ -729,8 +736,8 @@ public class SessionRestController {
 		} else {
 			log.error("Session {} is in the process of closing. Connection couldn't be created",
 					session.getSessionId());
-			return this.generateErrorResponse("Session " + session.getSessionId() + " not found", REQUEST_PATH,
-					HttpStatus.NOT_FOUND);
+			return SessionRestController.generateErrorResponse("Session " + session.getSessionId() + " not found",
+					REQUEST_PATH, HttpStatus.NOT_FOUND);
 		}
 	}
 
@@ -761,10 +768,11 @@ public class SessionRestController {
 				return new ResponseEntity<>(ipcamParticipant.toJson().toString(), RestUtils.getResponseHeaders(),
 						HttpStatus.OK);
 			} catch (MalformedURLException e) {
-				return this.generateErrorResponse("\"rtspUri\" parameter is not a valid rtsp uri", REQUEST_PATH,
-						HttpStatus.BAD_REQUEST);
+				return SessionRestController.generateErrorResponse("\"rtspUri\" parameter is not a valid rtsp uri",
+						REQUEST_PATH, HttpStatus.BAD_REQUEST);
 			} catch (Exception e) {
-				return this.generateErrorResponse(e.getMessage(), REQUEST_PATH, HttpStatus.INTERNAL_SERVER_ERROR);
+				return SessionRestController.generateErrorResponse(e.getMessage(), REQUEST_PATH,
+						HttpStatus.INTERNAL_SERVER_ERROR);
 			} finally {
 				session.closingLock.readLock().unlock();
 			}
@@ -837,15 +845,26 @@ public class SessionRestController {
 
 		ConnectionType type = ConnectionProperties.fromJson(params).build().getType();
 
+		// Check if custom ice servers are defined in params
+		boolean definedCustomIceServers = false;
+
 		if (ConnectionType.WEBRTC.equals(type)) {
-			if (params != null && params.get("customIceServers") == null
-					&& !openviduConfig.getWebrtcIceServersBuilders().isEmpty()) {
-				// If not defined in Connection, check if defined in OpenVidu global config
-				for (IceServerProperties.Builder iceServerPropertiesBuilder : openviduConfig
-						.getWebrtcIceServersBuilders()) {
-					IceServerProperties.Builder configIceBuilder = iceServerPropertiesBuilder.clone();
-					builder.addCustomIceServer(configIceBuilder.build());
+			if (params != null) {
+				JsonArray customIceServersJsonArray = null;
+				if (params.get("customIceServers") != null) {
+					customIceServersJsonArray = new Gson().toJsonTree(params.get("customIceServers"), List.class)
+							.getAsJsonArray();
+					definedCustomIceServers = customIceServersJsonArray.size() > 0;
 				}
+			}
+		}
+
+		if (!definedCustomIceServers && !openviduConfig.getWebrtcIceServersBuilders().isEmpty()) {
+			// If not defined in Connection, check if defined in OpenVidu global config
+			for (IceServerProperties.Builder iceServerPropertiesBuilder : openviduConfig
+					.getWebrtcIceServersBuilders()) {
+				IceServerProperties.Builder configIceBuilder = iceServerPropertiesBuilder.clone();
+				builder.addCustomIceServer(configIceBuilder.build());
 			}
 		}
 
@@ -872,7 +891,7 @@ public class SessionRestController {
 		return token;
 	}
 
-	protected ResponseEntity<String> generateErrorResponse(String errorMessage, String path, HttpStatus status) {
+	public static ResponseEntity<String> generateErrorResponse(String errorMessage, String path, HttpStatus status) {
 		JsonObject responseJson = new JsonObject();
 		responseJson.addProperty("timestamp", System.currentTimeMillis());
 		responseJson.addProperty("status", status.value());

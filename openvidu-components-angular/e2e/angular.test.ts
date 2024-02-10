@@ -5,7 +5,6 @@ import { AngularConfig } from './selenium.conf';
 import { OpenViduComponentsPO } from './utils.po.test';
 
 const url = AngularConfig.appUrl;
-const TIMEOUT = 30000;
 
 describe('Testing TOOLBAR STRUCTURAL DIRECTIVES', () => {
 	let browser: WebDriver;
@@ -25,6 +24,7 @@ describe('Testing TOOLBAR STRUCTURAL DIRECTIVES', () => {
 	});
 
 	afterEach(async () => {
+		// console.log('data:image/png;base64,' + await browser.takeScreenshot());
 		await browser.quit();
 	});
 
@@ -780,6 +780,7 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 	});
 
 	afterEach(async () => {
+		// console.log('data:image/png;base64,' + await browser.takeScreenshot());
 		await browser.quit();
 	});
 
@@ -872,10 +873,31 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 
 		await browser.sleep(500);
 
-		// Checking if fullscreen button is not present
 		await utils.waitForElement('.mat-menu-content');
 
-		expect(await utils.isPresent('fullscreen-btn')).to.be.false;
+		// Checking if fullscreen button is not present
+		expect(await utils.isPresent('#fullscreen-btn')).to.be.false;
+	});
+
+	it('should HIDE the STREAMING button', async () => {
+		await browser.get(`${url}`);
+
+		await utils.clickOn('#ovToolbar-checkbox');
+
+		await utils.clickOn('#broadcastingButton-checkbox');
+
+		await utils.clickOn('#apply-btn');
+
+		await utils.checkToolbarIsPresent();
+
+		// Open more options menu
+		await utils.clickOn('#more-options-btn');
+		await browser.sleep(500);
+
+		await utils.waitForElement('.mat-menu-content');
+
+		// Checking if fullscreen button is not present
+		expect(await utils.isPresent('#broadcasting-btn')).to.be.false;
 	});
 
 	it('should HIDE the LEAVE button', async () => {
@@ -984,6 +1006,75 @@ describe('Testing ATTRIBUTE DIRECTIVES', () => {
 		await utils.waitForElement('#remote-participant-item');
 
 		expect(await utils.isPresent('mute-btn')).to.be.false;
+	});
+
+	it('should HIDE the RECORDING activity', async () => {
+		await browser.get(`${url}`);
+
+		await utils.clickOn('#ovActivitiesPanel-checkbox');
+
+		await utils.clickOn('#recordingActivity-checkbox');
+
+		await utils.clickOn('#apply-btn');
+
+		await utils.checkToolbarIsPresent();
+
+		await utils.clickOn('#activities-panel-btn');
+
+		await browser.sleep(500);
+
+		await utils.waitForElement('#custom-activities-panel');
+
+		expect(await utils.isPresent('ov-recording-activity')).to.be.false;
+	});
+
+	it('should HIDE the STREAMING activity', async () => {
+		await browser.get(`${url}`);
+
+		await utils.clickOn('#ovActivitiesPanel-checkbox');
+
+		await utils.clickOn('#broadcastingActivity-checkbox');
+
+		await utils.clickOn('#apply-btn');
+
+		await utils.checkToolbarIsPresent();
+
+		await utils.clickOn('#activities-panel-btn');
+
+		await browser.sleep(500);
+
+		await utils.waitForElement('#custom-activities-panel');
+
+		await utils.waitForElement('ov-recording-activity');
+
+		expect(await utils.isPresent('ov-broadcasting-activity')).to.be.false;
+	});
+
+	it('should SHOW STREAMING ERROR', async () => {
+		await browser.get(`${url}`);
+
+		await utils.clickOn('#ovActivitiesPanel-checkbox');
+
+		await utils.clickOn('#broadcastingError-checkbox');
+
+		await utils.clickOn('#apply-btn');
+
+		await utils.checkToolbarIsPresent();
+
+		await utils.clickOn('#activities-panel-btn');
+
+		await browser.sleep(500);
+
+		await utils.waitForElement('#custom-activities-panel');
+
+		const status = await utils.waitForElement('#broadcasting-status');
+
+		expect(await status.getAttribute('innerText')).equals('FAILED');
+
+		await utils.clickOn('#broadcasting-activity');
+		await browser.sleep(500);
+		const error = await utils.waitForElement('#broadcasting-error');
+		expect(await error.getAttribute('innerText')).equals('TEST_ERROR');
 	});
 });
 
@@ -1142,6 +1233,5 @@ describe('Testing EVENTS', () => {
 
 		await utils.waitForElement('#onActivitiesPanelButtonClicked');
 		expect(await utils.isPresent('#onActivitiesPanelButtonClicked')).to.be.true;
-
 	});
 });

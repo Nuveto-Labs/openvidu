@@ -83,11 +83,6 @@
 			<version>${version.gson}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.mashape.unirest</groupId>
-			<artifactId>unirest-java</artifactId>
-			<version>${version.unirest}</version>
-		</dependency>
-		<dependency>
 			<groupId>org.jcodec</groupId>
 			<artifactId>jcodec-javase</artifactId>
 			<version>${version.jcodec}</version>
@@ -98,20 +93,14 @@
 			<version>${version.openvidu.java.client}</version>
 		</dependency>
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
 			<version>${version.junit}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.appium</groupId>
 			<artifactId>java-client</artifactId>
 			<version>${version.appium}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework</groupId>
-					<artifactId>spring-context</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 	</dependencies>
 

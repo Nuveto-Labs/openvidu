@@ -42,47 +42,38 @@
 	</developers>
 
 	<properties>
-		<version.kurento>6.18.0</version.kurento>
-		<version.spring-boot>2.3.12.RELEASE</version.spring-boot>
-		<version.junit>4.13.1</version.junit>
-		<version.junit.jupiter>5.8.1</version.junit.jupiter>
-		<version.junit.platform>1.8.1</version.junit.platform>
-		<version.selenium>3.141.59</version.selenium>
-		<version.mockito.core>3.6.0</version.mockito.core>
-		<version.powermock>2.0.9</version.powermock>
-		<version.hamcrest>2.2</version.hamcrest>
-		<version.httpclient>4.5.13</version.httpclient>
-		<version.janino>3.1.2</version.janino>
-		<version.commonslang>3.11</version.commonslang>
-		<version.dockerjava>3.2.12</version.dockerjava>
-		<version.slf4j>1.7.30</version.slf4j>
-		<version.gson>2.8.6</version.gson>
-		<version.unirest>1.4.9</version.unirest>
-		<version.jcodec>0.2.5</version.jcodec>
-		<version.commons-validator>1.7</version.commons-validator>
-		<version.commons-text>1.10.0</version.commons-text>
-		<version.testcontainers>1.16.2</version.testcontainers>
-		<version.appium>7.6.0</version.appium>
 
-		<version.webdrivermanager>4.2.2</version.webdrivermanager>
-
-		<version.openvidu.java.client>2.24.0</version.openvidu.java.client>
+		<version.spring-boot>2.7.14</version.spring-boot>
+		<version.kurento>7.0.1-SNAPSHOT</version.kurento>
+		<version.openvidu.java.client>2.29.0</version.openvidu.java.client>
 		<version.openvidu.client>1.1.0</version.openvidu.client>
 		<version.openvidu.test.browsers>1.1.0</version.openvidu.test.browsers>
 		<version.openvidu.test.e2e>1.1.1</version.openvidu.test.e2e>
 
-		<version.enforcer.plugin>3.0.0-M3</version.enforcer.plugin>
-		<version.extra.enforcer.rules.plugin>1.3</version.extra.enforcer.rules.plugin>
-		<version.source.plugin>3.2.1</version.source.plugin>
-		<version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
-		<version.gpg.plugin>1.6</version.gpg.plugin>
-		<version.nexus.staging.plugin>1.6.8</version.nexus.staging.plugin>
-		<version.exec.plugin>3.0.0</version.exec.plugin>
-		<version.javadoc.plugin>3.2.0</version.javadoc.plugin>
-		<version.maven.artifact>3.8.3</version.maven.artifact>
+		<version.junit>5.9.1</version.junit>
+		<version.selenium>4.12.1</version.selenium>
+		<version.mockito.core>4.9.0</version.mockito.core>
+		<version.powermock>2.0.9</version.powermock>
+		<version.janino>3.1.9</version.janino>
+		<version.dockerjava>3.2.13</version.dockerjava>
+		<version.slf4j>1.7.36</version.slf4j>
+		<version.gson>2.10</version.gson>
+		<version.jcodec>0.2.5</version.jcodec>
+		<version.testcontainers>1.17.6</version.testcontainers>
+		<version.appium>8.3.0</version.appium>
+		<version.stringsimilarity>2.0.0</version.stringsimilarity>
 
-		<maven.compiler.target>11</maven.compiler.target>
-		<maven.compiler.source>11</maven.compiler.source>
+		<version.compiler.plugin>3.10.1</version.compiler.plugin>
+		<version.enforcer.plugin>3.1.0</version.enforcer.plugin>
+		<version.extra.enforcer.rules.plugin>1.6.1</version.extra.enforcer.rules.plugin>
+		<version.source.plugin>3.2.1</version.source.plugin>
+		<version.assembly.plugin>3.3.0</version.assembly.plugin>
+		<version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
+		<version.gpg.plugin>1.6</version.gpg.plugin>
+		<version.nexus.staging.plugin>1.6.13</version.nexus.staging.plugin>
+		<version.exec.plugin>3.1.0</version.exec.plugin>
+		<version.javadoc.plugin>3.4.1</version.javadoc.plugin>
+		<version.maven.artifact>3.8.6</version.maven.artifact>
 
 		<openvidu.scm.url>https://github.com/OpenVidu/openvidu</openvidu.scm.url>
 		<openvidu.scm.connection>git@github.com:OpenVidu/openvidu.git</openvidu.scm.connection>
@@ -97,20 +88,14 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<!-- maven-compiler-plugin -->
-		<maven.compiler.target>11</maven.compiler.target>
-		<maven.compiler.source>11</maven.compiler.source>
+		<java.version>11</java.version>
 
-		<!-- Options to override the compiler arguments directly on the compiler 
-			arument line to separate between what the IDE understands as the source level 
-			and what the Maven compiler actually use. -->
-		<maven.compiler.argument.target>${maven.compiler.target}</maven.compiler.argument.target>
-		<maven.compiler.argument.source>${maven.compiler.source}</maven.compiler.argument.source>
+		<!-- maven-compiler-plugin -->
+		<maven.compiler.release>${java.version}</maven.compiler.release>
 
 		<!-- maven-enforcer-plugin -->
 		<maven.min.version>3.0.3</maven.min.version>
-		<jdk.min.version>${maven.compiler.source}</jdk.min.version>
-		<jdk.max.version>${maven.compiler.source}</jdk.max.version>
+
 	</properties>
 
 	<distributionManagement>
@@ -126,6 +111,13 @@
 
 	<build>
 		<plugins>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${version.compiler.plugin}</version>
+			</plugin>
+
 			<plugin>
 
 				<!-- Check for the minimum version of Java and Maven. Runs during the 
@@ -142,9 +134,9 @@
 						<configuration>
 							<rules>
 								<requireJavaVersion>
-									<message>To build this project JDK ${jdk.min.version} (or
-										greater) is required. Please install it.</message>
-									<version>${jdk.min.version}</version>
+									<message>To build this project JDK ${java.version} (or greater)
+										is required. Please install it.</message>
+									<version>${java.version}</version>
 								</requireJavaVersion>
 							</rules>
 						</configuration>
@@ -172,7 +164,7 @@
 						<configuration>
 							<rules>
 								<enforceBytecodeVersion>
-									<maxJdkVersion>${jdk.max.version}</maxJdkVersion>
+									<maxJdkVersion>${java.version}</maxJdkVersion>
 								</enforceBytecodeVersion>
 							</rules>
 							<fail>true</fail>

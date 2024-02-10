@@ -21,13 +21,12 @@ import { OpenViduRole } from './OpenViduRole';
 import { IceServerProperties } from './IceServerProperties';
 
 /**
- * See [[Session.connections]]
+ * See {@link Session.connections}
  */
 export class Connection {
-
     /**
-     * Identifier of the Connection. You can call methods [[Session.forceDisconnect]]
-     * or [[Session.updateConnection]] passing this property as parameter
+     * Identifier of the Connection. You can call methods {@link Session.forceDisconnect}
+     * or {@link Session.updateConnection} passing this property as parameter
      */
     connectionId: string;
 
@@ -77,7 +76,7 @@ export class Connection {
     clientData: string;
 
     /**
-     * The [[ConnectionProperties]] assigned to the Connection
+     * The {@link ConnectionProperties} assigned to the Connection
      */
     connectionProperties: ConnectionProperties;
 
@@ -89,13 +88,13 @@ export class Connection {
 
     /**
      * Array of Publisher objects this particular Connection is publishing to the Session (each Publisher object has one Stream, uniquely
-     * identified by its `streamId`). You can call [[Session.forceUnpublish]] passing any of this values as parameter
+     * identified by its `streamId`). You can call {@link Session.forceUnpublish} passing any of this values as parameter
      */
     publishers: Publisher[] = [];
 
     /**
      * Array of streams (their `streamId` properties) this particular Connection is subscribed to. Each one always corresponds to one
-     * Publisher of some other Connection: each string of this array must be equal to one [[Publisher.streamId]] of other Connection
+     * Publisher of some other Connection: each string of this array must be equal to one {@link Publisher.streamId} of other Connection
      */
     subscribers: string[] = [];
 
@@ -119,7 +118,6 @@ export class Connection {
      * @hidden
      */
     resetWithJson(json): Connection {
-
         this.connectionId = json.connectionId;
         this.status = json.status;
         this.createdAt = json.createdAt;
@@ -139,7 +137,7 @@ export class Connection {
             this.connectionProperties.adaptativeBitrate = json.adaptativeBitrate;
             this.connectionProperties.onlyPlayWithSubscribers = json.onlyPlayWithSubscribers;
             this.connectionProperties.networkCache = json.networkCache;
-            this.connectionProperties.customIceServers = json.customIceServers ?? []
+            this.connectionProperties.customIceServers = json.customIceServers ?? [];
         } else {
             this.connectionProperties = {
                 type: json.type,
@@ -152,21 +150,19 @@ export class Connection {
                 onlyPlayWithSubscribers: json.onlyPlayWithSubscribers,
                 networkCache: json.networkCache,
                 customIceServers: json.customIceServers ?? []
-            }
+            };
         }
         this.role = json.role;
         this.serverData = json.serverData;
 
         // publishers may be null
         if (json.publishers != null) {
-
             // 1. Array to store fetched Publishers and later remove closed ones
             const fetchedPublisherIds: string[] = [];
-            json.publishers.forEach(jsonPublisher => {
-
+            json.publishers.forEach((jsonPublisher) => {
                 const publisherObj: Publisher = new Publisher(jsonPublisher);
                 fetchedPublisherIds.push(publisherObj.streamId);
-                let storedPublisher = this.publishers.find(c => c.streamId === publisherObj.streamId);
+                let storedPublisher = this.publishers.find((c) => c.streamId === publisherObj.streamId);
 
                 if (!!storedPublisher) {
                     // 2. Update existing Publisher
@@ -183,16 +179,14 @@ export class Connection {
                     this.publishers.splice(i, 1);
                 }
             }
-
         }
 
         // subscribers may be null
         if (json.subscribers != null) {
-
             // 1. Array to store fetched Subscribers and later remove closed ones
             const fetchedSubscriberIds: string[] = [];
-            json.subscribers.forEach(jsonSubscriber => {
-                fetchedSubscriberIds.push(jsonSubscriber.streamId)
+            json.subscribers.forEach((jsonSubscriber) => {
+                fetchedSubscriberIds.push(jsonSubscriber.streamId);
                 if (this.subscribers.indexOf(jsonSubscriber.streamId) === -1) {
                     // 2. Add new Subscriber
                     this.subscribers.push(jsonSubscriber.streamId);
@@ -214,7 +208,7 @@ export class Connection {
      * @hidden
      */
     equalTo(other: Connection): boolean {
-        let equals: boolean = (
+        let equals: boolean =
             this.connectionId === other.connectionId &&
             this.status === other.status &&
             this.createdAt === other.createdAt &&
@@ -234,18 +228,19 @@ export class Connection {
             this.platform === other.platform &&
             this.clientData === other.clientData &&
             this.subscribers.length === other.subscribers.length &&
-            this.publishers.length === other.publishers.length);
+            this.publishers.length === other.publishers.length;
         if (equals) {
             if (this.connectionProperties.kurentoOptions != null) {
-                equals = JSON.stringify(this.connectionProperties.kurentoOptions) === JSON.stringify(other.connectionProperties.kurentoOptions);
+                equals =
+                    JSON.stringify(this.connectionProperties.kurentoOptions) === JSON.stringify(other.connectionProperties.kurentoOptions);
             } else {
-                equals = (this.connectionProperties.kurentoOptions === other.connectionProperties.kurentoOptions);
+                equals = this.connectionProperties.kurentoOptions === other.connectionProperties.kurentoOptions;
             }
         }
         if (equals) {
             if (this.connectionProperties.customIceServers != null) {
                 // Order alphabetically Ice servers using url just to keep the same list order.
-                const simpleIceComparator = (a: IceServerProperties, b: IceServerProperties) => (a.url > b.url) ? 1 : -1
+                const simpleIceComparator = (a: IceServerProperties, b: IceServerProperties) => (a.url > b.url ? 1 : -1);
                 const sortedIceServers = this.connectionProperties.customIceServers.sort(simpleIceComparator);
                 const sortedOtherIceServers = other.connectionProperties.customIceServers.sort(simpleIceComparator);
                 equals = JSON.stringify(sortedIceServers) === JSON.stringify(sortedOtherIceServers);
@@ -280,5 +275,4 @@ export class Connection {
             this.connectionProperties.role = newConnectionProperties.role;
         }
     }
-
 }
