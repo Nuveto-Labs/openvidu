@@ -29,7 +29,7 @@
 
 .input-container textarea {
 	width: 100%;
-	height: 16px;
+	height: 18px;
 	margin: auto;
 	background-color: transparent;
 	display: block;
@@ -106,4 +106,1469 @@
 
 ::ng-deep a:-webkit-any-link {
 	color: #1a73e8;
+}
+
+.sigma-assistent-message{
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+  flex-direction: row-reverse;
+  border: none;
+  font-family: system-ui;
+  margin: .8rem 0 0;
+  z-index: 1;
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.sigma-mesage-incoming-text-content{
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  overflow-wrap: break-word;
+  text-align: left;
+  color: #000;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sigma-message-incoming-text{
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+  font-family: system-ui;
+  margin: .8rem 0 0;
+  z-index: 1;
+  display: flow-root;
+  float: left;
+  padding: 3px 7px 10px 5px;
+  width: 60%;
+  margin-bottom: 13px;
+  margin-top: 0;
+  overflow-wrap: break-word;
+  text-align: left;
+  background: #fff;
+  border-radius: .8rem;
+  box-shadow: 1px 1px 10px #c1c1c1;
+  color: #000;
+  border: 1px solid var(--sigma-primary-color, #2c40f5);
+}
+
+.sigma-message-incoming-name{
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  overflow-wrap: break-word;
+  text-align: left;
+  color: #000;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0px 0px 16px;
+  font-weight: bolder;
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.sigma-time {
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  overflow-wrap: break-word;
+  text-align: left;
+  color: #000;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sigma-message-incoming-time{
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  overflow-wrap: break-word;
+  text-align: left;
+  color: #000;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sigma-time-message{
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+  text-align: left;
+  color: #000;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 12px;
+  margin: 0;
+}
+
+.sigma-message-outcoming-text{
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+  font-family: system-ui;
+  margin: .8rem 0 0;
+  z-index: 1;
+  display: flow-root;
+  float: right;
+  margin-bottom: 16px;
+  padding: 3px 7px 10px 5px;
+  width: 60%;
+  background: #fff;
+  border-radius: .8rem;
+  box-shadow: 1px 1px 10px #c1c1c1;
+  color: #000;
+  border: 1px solid var(--sigma-secondary-color, #27d76d);
+}
+
+.sigma-mesage-outcoming-text-content{
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  color: #000;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sigma-message-outcoming-name{
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  color: #000;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0px 0px 16px;
+  display: flex;
+  font-weight: bolder;
+  justify-content: flex-end;
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.sigma-message-outcoming-text-msg{
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--sigma-font-size,16px);
+  color: #000;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0px 0px 16px;
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-bottom: 4px;
+  text-align: right;
+  width: 100%;
+  word-break: break-word;
+}
+
+.sigma-message-outcoming-time{
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  color: #000;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+  align-items: end;
+  justify-content: space-between;
+  margin-top: .6rem;
+  width: 100%;
+  display: flex;
+  flex-direction: row-reverse;
+  float: left;
+  font-size: 12px;
+  margin-bottom: 0;
+  margin-right: 6px;
+  text-align: left;
+}
+
+.sigma-status-message{
+  direction: ltr;
+  text-size-adjust: 100%;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  color: #000;
+  font-size: 12px;
+  text-align: left;
+  font-family: Work Sans,sans-serif;
+  box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  margin-left: 1rem;
+}
+
+.sigma-terminated-chat {
+  display: flex;
+  flex-direction: column;
+}
+
+.sigma-terminated-chat-division{
+  border: solid 1px;
+  border-color: gray;
+  width: 100%;
+  margin-bottom: 1px;
+}
+
+.sigma-terminated-chat-text{
+  color: gray;
+  text-align: center;
+}
+
+.sigma-loader, .sigma-loader:before {
+	display: inline-block;
+	border: 20px double transparent;
+	border-top-color: var(--sigma-primary-color);
+	border-radius: 50%;
+  box-sizing: border-box;
+  border-bottom-width: 0px;
+}
+.sigma-loader {
+	padding: 8px;
+  animation: sigma-wifiLoading 1s ease-in infinite;
+}
+.sigma-loader:before {
+	content: '';
+	width: 0; height: 0;
+}
+@keyframes sigma-wifiLoading {
+  0% { border-style: none}
+  100% { border-style: double}
+}
+
+.sigma-center-container {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  width: calc(100% - 4px);
+  height: 100%;
+  background: var(--sigma-background-chat, #f6f5f5);
+  z-index: 2;
+  opacity: 0.9;
+}
+
+.sigma-btn-yes-no{
+  min-width: 100px;
+  color: rgb(255, 255, 255);
+  background-color: var(--sigma-start-chat-color, var(--sigma-primary-color));
+  padding: 0.5vw;
+  border: none;
+  cursor: pointer;
+  opacity: 1.0;
+  margin: 1vw 0vw;
+  display: inline-block;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  user-select: none;
+  font-size: 1rem;
+  border-radius: 0.25rem;
+  -webkit-appearance: button;
+  text-transform: none;
+  font-family: inherit;
+  overflow: visible;
+  transition: 0.3s;
+}
+
+.sigma-btn-yes-no:hover {
+  transform: scale(1.1);
+}
+
+.sigma-button-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sigma-container {
+  background-color: var(--sigma-background-chat, #f6f5f5);;
+  border-radius: 8px;
+  bottom: 0px;
+  display: block;
+  height: 560px;
+  position: fixed;
+  right: 15px;
+  width: 345px;
+  z-index: 9;
+  font-family: var(--sigma-font-family, 'Times New Roman', Times, serif);
+  font-size: var(--sigma-font-size, 16px);
+}
+
+/* Form */
+
+.sigma-container .sigma-btn-close {
+  height: 32px;
+  width: 32px;
+  float: right;
+  margin-bottom: 1.1vw;
+  margin-top: 0.5vh;
+}
+
+.sigma-container>.sigma-btn-close>svg {
+  color: black;
+  margin-top: 1vw;
+}
+
+.sigma-form {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: block;
+  padding-top: 0;
+  margin-top: 0em;
+  border-left: 2px solid var(--sigma-primary-color);
+  border-right: 2px solid var(--sigma-primary-color);
+  border-top: 2px solid var(--sigma-primary-color);
+}
+
+.sigma-form-inputs {
+  padding: 10px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: block;
+  padding-top: 0;
+  margin-top: 0em;
+  border-left: 2px solid var(--sigma-primary-color);
+  border-right: 2px solid var(--sigma-primary-color);
+  border-top: 2px solid var(--sigma-primary-color);
+}
+
+.sigma-logo {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sigma-title {
+  max-height: 2vw;
+  padding: 0;
+  margin-top: auto;
+  margin-bottom: auto;
+  font-size: 1.5rem;
+  color: white;
+  text-align: center;
+}
+
+.sigma-headline {
+  color: var(--sigma-primary-color);
+  text-align: center;
+  font-size: 1rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  display: block;
+  margin-block-start: 0.67em;
+  margin-block-end: 0.67em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+}
+
+.sigma-label {
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
+  display: inline-block;
+  color: var(--sigma-primary-color);
+}
+
+.sigma-input {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 1vh;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ced4da;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 0.25rem;
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+  margin: 0;
+  font-family: inherit;
+  overflow: visible;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  box-sizing: border-box;
+}
+
+.sigma-input-select {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 1vh;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ced4da;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 0.25rem;
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+  margin: 0;
+  font-family: inherit;
+  overflow: visible;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  box-sizing: border-box;
+  appearance: none;
+  background-image: url(data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22currentColor%22%20class%3D%22bi%20bi-chevron-down%22%20viewBox%3D%220%200%2016%2016%22%3E%20%20%20%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M1.646%204.646a.5.5%200%200%201%20.708%200L8%2010.293l5.646-5.647a.5.5%200%200%201%20.708.708l-6%206a.5.5%200%200%201-.708%200l-6-6a.5.5%200%200%201%200-.708z%22%2F%3E%20%3C%2Fsvg%3E);
+  background-repeat: no-repeat;
+  background-position: 98% 50%;
+}
+
+#sigma-input-msg {
+  width: 200px;
+  margin-left: .5rem;
+  height: 35px;
+}
+
+label.sigma-label:not(.form-check-label):not(.custom-file-label) {
+  font-weight: 500;
+  top: .5vw;
+}
+
+.sigma-input::-ms-expand {
+  background-color: transparent;
+  border: 0;
+}
+
+.sigma-input:focus,
+.sigma-input-select:focus {
+  color: #495057;
+  background-color: #fff;
+  border-color: var(--sigma-secondary-color);
+  outline: 0;
+  box-shadow: none;
+}
+
+.sigma-input::-webkit-input-placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.sigma-input::-moz-placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.sigma-input:-ms-input-placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.sigma-input::-ms-input-placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.sigma-input::placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.sigma-input:disabled {
+  background-color: #e9ecef;
+  opacity: 1;
+}
+
+.sigma-btn {
+  color: rgb(255, 255, 255);
+  background-color: var(--sigma-start-chat-color, var(--sigma-primary-color));
+  padding: 0.5vw;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  opacity: 1.0;
+  margin: 1vw 0vw;
+  display: inline-block;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  font-size: 1rem;
+  border-radius: 0.25rem;
+  transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+  -webkit-appearance: button;
+  text-transform: none;
+  font-family: inherit;
+  overflow: visible;
+  transition: 0.3s;
+  width: 322px;
+}
+
+.sigma-btn:hover {
+  color: #fff;
+  background-color: var(--sigma-start-chat-hover-color, var(--sigma-secondary-color)) !important;
+  text-decoration: none;
+}
+
+.sigma-btn:focus {
+  outline: 0;
+  background-color: var(--sigma-start-chat-color, var(--sigma-primary-color));
+  box-shadow: none
+}
+
+.sigma-btn:disabled {
+  color: #fff;
+  background-color: var(--sigma-start-chat-hover-color, var(--sigma-secondary-color));
+  opacity: .65;
+}
+
+/* Chat */
+
+.sigma-header {
+  display: flex;
+  background: var(--sigma-primary-color);
+  display: flex;
+  background: var(--sigma-primary-color);
+  margin-inline: auto;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding-top: 5px;
+  justify-content: space-between;
+  height: 55px;
+}
+
+.sigma-img-icon {
+  border-radius: 50%;
+  background: white;
+  width: 45px;
+  height: 45px;
+  margin-left: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sigma-header-title {
+  margin: 0;
+  color: white;
+  font-size: 1.6rem;
+}
+
+.sigma-header-buttons{
+  display: flex;
+
+}
+
+.sigma-min-chat {
+  float: right;
+  height: 32px;
+  margin-bottom: 1.1vw;
+  margin-top: 0.5vh;
+  width: 32px;
+}
+
+.sigma-messages {
+  padding: 12px;
+  margin-top: 0;
+  margin-bottom: 0;
+  overflow-y: auto;
+}
+.sigma-assistent-message{
+  flex-direction: row-reverse;
+}
+
+.sigma-message-incoming-text,
+.sigma-message-outcoming-text,
+.sigma-message-outcoming-image,
+.sigma-messages>div {
+  margin: .8rem 0rem 0rem 0rem;
+  border: none;
+  z-index: 1;
+  font-family: system-ui;
+}
+
+.sigma-messages>div {
+  position: relative;
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sigma-right-triangle,
+.sigma-left-triangle {
+  width: 0; 
+  height: 0; 
+  border-top: 25px solid transparent;
+  border-bottom: 0px solid transparent;
+  position: absolute;
+  bottom: 0;
+}
+
+.sigma-right-triangle {
+  border-left: 25px solid var(--sigma-secondary-color);
+  left: 16.9rem;
+}
+
+.sigma-left-triangle {
+  border-right:25px solid var(--sigma-primary-color);
+  right: 17rem;
+}
+
+.sigma-message-outcoming-image,
+.sigma-message-outcoming-attachment-image,
+.sigma-message-incoming-image,
+.sigma-message-incoming-attachment-image {
+  width: 100%;
+}
+.sigma-message-incoming-image-download-content,
+.sigma-message-outcoming-image-download-content {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 98%;
+  background: none;
+  transition: ease 0.3s;
+}
+.sigma-message-incoming-image-download-content:hover,
+.sigma-message-outcoming-image-download-content:hover {
+background: #00000091;
+}
+
+.sigma-message-incoming-image-download-content svg,
+.sigma-message-incoming-image-download-content a ,
+.sigma-message-outcoming-image-download-content svg,
+.sigma-message-outcoming-image-download-content a {
+  display: none;
+}
+.sigma-message-incoming-image-download-content a,
+.sigma-message-outcoming-image-download-content a {
+  background-color: black;
+  padding: 10px;
+  border-radius: 50%;
+}
+
+.sigma-message-incoming-image-download-content:hover svg,
+.sigma-message-incoming-image-download-content:hover a ,
+.sigma-message-outcoming-image-download-content:hover svg,
+.sigma-message-outcoming-image-download-content:hover a {
+  display: block;
+}
+
+.sigma-options-attachment svg {
+  width: 20px;
+  height: 20px;
+  fill: white;
+}
+
+.sigma-options-attachment {
+  position: absolute;
+  top: 41%;
+  width: 93%;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 10px;
+}
+
+.sigma__show-message-options {
+  margin-right: 1rem;
+  display: flex;
+  cursor: pointer;
+}
+
+.sigma-assistent-message .sigma__show-message-options {
+  margin-left: 1rem;
+ }
+
+.sigma-message-options {
+  background: white;
+  border-radius: 16px;
+  padding: 0.5rem;
+  margin-right: 1rem;
+  margin-top: 0.5rem;
+  position: relative;
+  display: none;
+  border: 1px solid black;
+  box-shadow: 1px 1px 10px #c1c1c1;
+}
+
+.sigma-option-emotes,
+.sigma-option-reply {
+  color: black;
+  margin-left: 0.4rem;
+  margin-right: 0.4rem;
+  cursor: pointer;
+}
+
+.sigma-emotions {
+  border: 1px solid black;
+  box-shadow: 1px 1px 10px #c1c1c1;
+  border-radius: 16px;
+  margin-top: 0.6rem;
+  padding: 0.5rem;
+  position: relative;
+  margin-right: 1rem;
+  display: none;
+  background-color: white;
+}
+
+.sigma-emotions div {
+  display: flex;
+  margin: 0.2rem 0rem;
+}
+
+.sigma-emotions svg {
+  cursor: pointer;
+  margin-inline: 0.3rem;
+}
+
+.sigma-reply-content {  
+  background-color: var(--sigma-secondary-color);
+  opacity: 0.6;
+  height: 3rem;
+  display: none;
+  border-radius: 8px;
+  align-items: center;
+}
+
+.sigma-reply-msg {
+  margin-left: 1rem;
+  width: 100%;
+  margin-right: 1rem;
+  border-radius: 8px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sigma-msg-replyed {
+  width: 230px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sigma-cancel-reply {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.sigma-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sigma-messages::-webkit-scrollbar-track {
+  background: var(--sigma-secondary-color);      
+  border-radius: 8px;
+}
+
+.sigma-messages::-webkit-scrollbar-thumb {
+  background-color: var(--sigma-primary-color);  
+  border-radius: 20px;      
+}
+
+.sigma-message-outcoming-time-attachment,
+.sigma-time .sigma-message-outcoming-time {
+  float: right;
+}
+
+.sigma-time .sigma-message-outcoming-time {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-top: 0.6rem;
+  flex-direction: row;
+  width: 100%;
+}
+
+.sigma-time-message {
+  margin: 0;
+  font-size: 12px;
+}
+
+.sigma-status-message {
+  display: flex;
+  margin-left: 1rem;
+}
+
+.sigma-message-outcoming-text,
+.sigma-message-outcoming-document,
+.sigma-message-outcoming-html,
+.sigma-message-outcoming-audio,
+.sigma-message-outcoming-video,
+.sigma-message-outcoming-image {
+    background: var(--sigma-secondary-color);
+    width: 60%;
+    color: white;
+    float: right;
+    border: 1px solid darkgray;
+    border-top-right-radius: 0.7rem;
+    border-top-left-radius: 0.7rem;
+    border-bottom-left-radius: 0.7rem;
+    padding: 3px 0px 10px 5px;
+    margin-bottom: 16px;
+    padding-right: 7px;
+    display: flow-root;
+}
+
+.sigma-message-outcoming-text-msg {
+    text-align: right;
+    margin-bottom: 0px;
+    padding-bottom: 4px;
+    margin-top: 0;
+    word-break: break-word;
+    width: 100%;
+}
+
+.sigma-time .sigma-message-outcoming-time {
+    text-align: left;
+    margin-right: 6px;
+    margin-bottom: 0;
+    font-size: 12px;
+    display: flex;
+    flex-direction: row-reverse;
+    float: left;
+}
+
+.sigma-message-outcoming-time>svg {
+    margin-right: 0.3vw;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.sigma-user_client {
+    display: flex;
+    height: 100%;
+    align-items: end;
+    margin-top: 1rem;
+    margin-left: 0.5rem;
+}
+
+.sigma-assistent-message .sigma-user_client {
+    margin-left: 0;
+    margin-right: 0.5rem;
+}
+
+.sigma-message-outcoming-name {
+    font-weight: bolder;
+    margin-bottom: 0;
+    margin-top: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sigma-user_client .sigma-message-outcoming-name {
+    background-color: var(--sigma-client-icon-color, var(--sigma-primary-color));
+}
+
+.sigma-user_client .sigma-message-outcoming-name,
+.sigma-user_client .sigma-message-incoming-name {
+    font-weight: bolder;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    text-align: center;
+    padding: 0;
+    margin: 0;
+    justify-content: center;
+    position: relative;
+}
+
+.sigma-message-incoming-name>img {
+    width: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    bottom: 50%;
+    transform: translate(-50%, -50%);
+    margin-inline: 50%;
+}
+
+.sigma-user {
+    margin-bottom: 0;
+    margin-top: 0.2vw;
+}
+
+.sigma-message-outcoming-time-attachment {
+    font-size: 12px;
+    margin-bottom: 0;
+    margin-right: 6px;
+    float: left;
+    text-align: right;
+    margin-top: .5vw;
+}
+
+.sigma-message-outcoming-download,
+.sigma-message-incoming-download {
+    color: white;
+    display: block;
+    font-weight: 400;
+    text-decoration: none;
+    width: 50%;
+    border: none;
+    margin: 0;
+}
+
+.sigma-message-outcoming-download:hover {
+    color: var(--sigma-primary-color);
+}
+
+.sigma-message-incoming-download:hover {
+    color: var(--sigma-secondary-color);
+}
+
+.sigma-image,
+.sigma-audio {
+    max-width: 157px;
+    min-width: 157px;
+}
+
+.sigma-message-outcoming-attachment {
+    float: left;
+    max-width: 157px;
+    min-width: 157px;
+    height: 110px;
+    border: 1px solid lightgray;
+    border-radius: 9px;
+    vertical-align: middle;
+}
+
+.sigma-message-incoming-text,
+.sigma-message-incoming-html,
+.sigma-message-incoming-document,
+.sigma-message-incoming-audio,
+.sigma-message-incoming-video,
+.sigma-message-incoming-image {
+    background: var(--sigma-primary-color);
+    color: white;
+    float: left;
+    width: 60%;
+    border: 1px solid darkgray;
+    border-top-left-radius: 0.7rem;
+    border-top-right-radius: 0.7rem;
+    border-bottom-right-radius: 0.7rem;
+    padding: 3px 0px 10px 5px;
+    margin-bottom: 16px;
+    display: flow-root;
+    padding-right: 7px;
+}
+
+.sigma-message-incoming-html,
+.sigma-message-incoming-video,
+.sigma-message-incoming-document,
+.sigma-message-incoming-image,
+.sigma-message-incoming-html-download,
+.sigma-message-incoming-video-download .sigma-message-incoming-audio-download {
+    width: 100%;
+}
+
+.sigma-message-outcoming-html,
+.sigma-message-outcoming-video,
+.sigma-message-outcoming-document,
+.sigma-message-outcoming-image,
+.sigma-message-outcoming-html-download,
+.sigma-message-outcoming-video-download .sigma-message-incoming-audio-download {
+    width: 100%;
+}
+
+.sigma-message-outcoming-attachment-video,
+.sigma-message-incoming-attachment-video{
+  width: 100%;
+}
+.sigma-message-incoming-html-download,
+.sigma-message-incoming-video-download,
+.sigma-message-incoming-audio-download,
+.sigma-message-incoming-image-download {
+    margin-top: 1rem;
+    margin-inline: 5%;
+    display: none;
+}
+
+.sigma-message-document-img{
+  margin: 5px;
+}
+.sigma-message-document-link{
+  text-overflow: ellipsis;
+  width: 197px;
+  overflow: hidden;
+}
+
+.sigma-message-incoming-image-download {
+    background: white;
+    color: black;
+    padding: 0.5rem;
+    border-radius: 5rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.sigma-message-outcoming-image-download:hover,
+.sigma-message-incoming-image-download:hover {
+    background: #dadada;
+    color: black;
+}
+
+.sigma-message-incoming-name {
+    font-weight: bolder;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+.sigma-message-incoming-text {
+    text-align: left;
+    margin-bottom: 13px;
+    margin-top: 0;
+    overflow-wrap: break-word;
+}
+
+.sigma-message-incoming-time-msg {
+    font-size: 12px;
+    margin-bottom: 0px;
+    margin-right: 1vw;
+    text-align: right;
+    width: 100%;
+    display: flex;
+    margin-top: 0.4vw;
+}
+
+.sigma-message-incoming-time>svg {
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: 0.3vw;
+}
+
+
+.sigma-message-incoming-time-attachment {
+    font-size: 12px;
+    margin-bottom: 0;
+    text-align: right;
+    margin-right: 0.5vw;
+}
+
+.sigma-message-incoming-attachment {
+    float: right;
+    max-width: 157px;
+    min-width: 157px;
+    height: 110px;
+    border: 1px solid lightgray;
+    border-radius: 9px;
+    vertical-align: middle;
+    margin-right: 0.2rem;
+}
+
+.sigma-assistent-message>.sigma-message-incoming>.sigma-message-incoming-text-msg {
+    margin-left: 0;
+    text-align: left;
+}
+
+.sigma-message-outcoming-text,
+.sigma-message-outcoming-image,
+.sigma-message-outcoming-video,
+.sigma-message-outcoming-audio,
+.sigma-message-outcoming-html,
+.sigma-message-outcoming-document,
+.sigma-message-incoming-text,
+.sigma-message-incoming-video,
+.sigma-message-incoming-audio,
+.sigma-message-incoming-html,
+.sigma-message-incoming-document,
+.sigma-message-incoming-image {
+  background: white;
+  color: black;
+  border-radius: 0.8rem;
+  box-shadow: 1px 1px 10px #c1c1c1;
+}
+.sigma-message-outcoming-text,
+.sigma-message-outcoming-video,
+.sigma-message-outcoming-audio,
+.sigma-message-outcoming-html,
+.sigma-message-outcoming-document,
+.sigma-message-outcoming-image {
+  border: 1px solid var(--sigma-secondary-color);
+}
+
+.sigma-flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.sigma-audio-button svg { 
+  color: white;
+}
+
+.sigma-audio-button {
+  background-color: var(--sigma-secondary-color);
+  padding: 0.5rem;
+  border-radius: 16px;
+  margin-right: .5rem;
+  cursor: pointer;
+}
+
+.sigma-btn-play {
+  display: flex;
+}
+
+.sigma-btn-pause {
+  display: none;
+}
+
+.sigma-time-audio-content {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.sigma-time-audio {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sigma-secondary-color)
+}
+
+
+.sigma-message-incoming-text,
+.sigma-message-incoming-image,
+.sigma-message-incoming-video,
+.sigma-message-incoming-audio,
+.sigma-message-incoming-document,
+.sigma-message-incoming-html {
+  border: 1px solid var(--sigma-primary-color);
+  /* background: vcar(--sigma-primary-color); */
+}
+
+
+.sigma-component-send-message {
+  display: flex;
+  position: relative;
+  right: inherit;
+  width: 100%;
+  height: 3rem;
+  align-items: center;
+}
+
+.sigma-input[type="file"] {
+  overflow: hidden;
+}
+
+.sigma-input[type=file]:not(:disabled):not([readonly]) {
+  bottom: 0;
+  left: 9px;
+  position: absolute;
+  cursor: pointer;
+  opacity: 0;
+  right: 15.7vw;
+  width: 2%;
+  z-index: 1;
+}
+
+.sigma-label-attachment {
+  background: none;
+  bottom: 0;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  right: 0;
+  z-index: 0;
+  display: flex;
+  margin-left: 0.6rem;
+}
+
+.sigma-emotion-message{
+  font-family: system-ui;
+  position: absolute;
+  z-index: 132;
+  right: 11.5rem;
+  bottom: -6px;
+  border: 1px solid var(--sigma-secondary-color);
+  border-radius: 16px;
+  display: none;
+}
+
+.sigma-attachtment-content-options {
+  position: relative;
+}
+
+.sigma-btn-options {
+  font-family: system-ui;
+  text-align: center;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.sigma-btn-message{
+  font-weight: 600;
+  transition: 0.3s;
+  margin-top: 1vh;
+  margin-inline: .5vw;
+  background: white;
+  color: var(--sigma-primary-color);
+  border-radius: 8rem;
+  border: 1px solid var(--sigma-primary-color);
+  box-shadow: 1px 1px 10px #c1c1c1;
+  padding: 7px;
+}
+
+.sigma-btn-message:hover {
+  background-color: var(--sigma-primary-color);
+  color: var(--sigma-background-chat);
+}
+
+#sigma-input-msg {
+  width: 100%;
+  margin: 0;
+  margin-inline: 0.6rem;
+  border-radius: 16px;
+  border: 1px solid var(--sigma-primary-color);
+  font-family: system-ui;
+}
+
+.sigma-send-msg-btn {
+  border-radius: 18px;
+  margin-right: .5rem;
+  height: 35px;
+  width: 32px;
+  padding: 0px;
+  padding-top: 5px;
+}
+
+/* Minimized Chat */
+
+.sigma-minimized {
+  position: fixed;
+  right: 2rem;
+  bottom: 3rem;
+  cursor: pointer;
+  background: #fff;
+  border-radius: 50%;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sigma-minimized-img {
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+.sigma__number-of-messages {
+  margin: 0;
+  box-sizing: unset;
+}
+
+@keyframes sigma-fadein {
+  0% {
+      opacity: 0;
+  }
+  100% {
+      opacity: 1;
+  }
+}
+
+.sigma__bg-number-of-messages {
+  animation: sigma-fadein 1s ease 0s infinite alternate none running;
+  position: relative;
+  bottom: 3.3rem;
+  background: blue;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  color: white;
+  text-align: center;
+  font-size: .9rem;
+  line-height: 0.3rem;
+  padding: 0.5rem;
+  display: none;
+  width: 12px;
+  height: 12px;
+  line-height: 12px;
+}
+
+/* FAB Button */
+
+.sigma-fab {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  display: none;
+}
+
+.sigma-fab a,
+.sigma-fab button {
+  cursor: pointer;
+  width: 48px;
+  height: 48px;
+  border-radius: 30px;
+  background-color: #cb60b3;
+  border: none;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .4);
+  font-size: 24px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  -webkit-transition: .2s ease-out;
+  -moz-transition: .2s ease-out;
+  transition: .2s ease-out;
+}
+
+.sigma-fab button.sigma-main {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+
+}
+
+.sigma-fab button.sigma-main img {
+  height: 36px;
+  width: 36px;
+}
+
+.sigma-fab ul {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 0;
+  padding-right: 5px;
+  margin: 0;
+  list-style: none;
+  z-index: 10;
+
+  -webkit-transition: .2s ease-out;
+  -moz-transition: .2s ease-out;
+  transition: .2s ease-out;
+}
+
+.sigma-fab ul li {
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
+  margin-bottom: -10%;
+  display: none;
+
+  -webkit-transition: .3s ease-out;
+  -moz-transition: .3s ease-out;
+  transition: .3s ease-out;
+}
+
+.sigma-fab ul li label {
+  margin-right: 10px;
+  white-space: nowrap;
+  display: block;
+  margin-top: 10px;
+  padding: 5px 8px;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+  border-radius: 3px;
+  font-size: 16px;
+  pointer-events: none;
+  opacity: 0;
+
+  -webkit-transition: .2s ease-out;
+  -moz-transition: .2s ease-out;
+  transition: .2s ease-out;
+}
+
+.sigma-fab ul li a img {
+  height: 32px;
+  width: 32px;
+}
+
+.sigma-fab button.sigma-main.sigma-visible {
+  outline: none;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .5);
+}
+
+.sigma-fab button.sigma-main.sigma-visible+ul {
+  bottom: 70px;
+}
+
+.sigma-fab button.sigma-main.sigma-visible+ul li {
+  margin-bottom: 10px;
+  display: flex;
+}
+
+.sigma-fab button.sigma-main.sigma-visible+ul li:hover label {
+  opacity: 1;
+}
+
+.sigma-checkbox-div {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  margin-top: 2vh;
+}
+
+.sigma-input-checkbox {
+  margin-right: 1vw;
+}
+
+.sigma-label-checkbox {
+  font-size: 13px;
 }

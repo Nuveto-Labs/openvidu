@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, HostListener } from '@angular/core';
 import { Observable } from 'rxjs/internal/Observable';
 import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
 
@@ -13,6 +13,8 @@ import { Signal } from '../../models/signal.model';
 import { PanelService } from '../panel/panel.service';
 import { ParticipantService } from '../participant/participant.service';
 import { PanelType } from '../../models/panel.model';
+import { v4 as uuidv4 } from 'uuid';
+import { TranslateService } from '../../services/translate/translate.service';
 
 /**
  * @internal
@@ -31,7 +33,8 @@ export class ChatService {
 		protected openviduService: OpenViduService,
 		protected participantService: ParticipantService,
 		protected panelService: PanelService,
-		protected actionService: ActionService
+		protected actionService: ActionService, 
+    private translateService: TranslateService
 	) {
 		this.log = this.loggerSrv.get('ChatService');
 		this.messagesObs = this._messageList.asObservable();
@@ -42,25 +45,24 @@ export class ChatService {
 	subscribeToChat() {
 		const session = this.openviduService.getWebcamSession();
 		session.on(`signal:${Signal.CHAT}`, (event: any) => {
-			const connectionId = event.from.connectionId;
-			const data = JSON.parse(event.data);
-			const isMyOwnConnection = this.openviduService.isMyOwnConnection(connectionId);
-			this.messageList.push({
-				isLocal: isMyOwnConnection,
-				nickname: data.nickname,
-				message: data.message
-			});
+			const message = JSON.parse(event.data);
 			if (!this.panelService.isChatPanelOpened()) {
+        var name = message.name || this.translateService.translate('PANEL.CHAT.AGENT');
+        if(!message.type){
+          message.type = 'text';
+        }
+        message.type = message.type == 'text/html' ? 'html' : message.type.split('/')[0];
+        message.type = ['image', 'video', 'audio', 'html', 'text'].includes(message.type) ? message.type : 'document'
+        this.messageList.push(message);
 				const notificationOptions: INotificationOptions = {
-					message: `${data.nickname.toUpperCase()} sent a message`,
+					message: name.toUpperCase() + ' ' + this.translateService.translate('PANEL.CHAT.SENT_MESSAGE'),
 					cssClassName: 'messageSnackbar',
-					buttonActionText: 'READ'
+					buttonActionText: this.translateService.translate('PANEL.CHAT.READ')
 				};
 				this.launchNotification(notificationOptions);
 				this.messageSound.play().catch(() => {});
-
+        this._messageList.next(this.messageList);
 			}
-			this._messageList.next(this.messageList);
 		});
 	}
 
@@ -68,15 +70,112 @@ export class ChatService {
 		message = message.replace(/ +(?= )/g, '');
 		if (message !== '' && message !== ' ') {
 			const data = {
+        id: uuidv4(),
 				message: message,
-				nickname: this.participantService.getMyNickname()
+				name: this.participantService.getMyNickname(),
+        system: false,
+        type: 'text',
+        datetime: new Date().toISOString(),
+        status: 'sending'
 			};
-
-			await this.openviduService.sendSignal(Signal.CHAT, undefined, data);
+      // await this.openviduService.sendSignal(Signal.CHAT, undefined, data);
+      this.messageList.push(data);
+      this._messageList.next(this.messageList);
+      var evt = new CustomEvent("SigmaChatSend", {detail: {
+        message: message,
+        id: data.id
+      }}); 
+		  window.dispatchEvent(evt);
 		}
 	}
 
-	protected launchNotification(options: INotificationOptions) {
+  sendMedia(file: File) : string{
+		if (file) {
+			let type = file.type == 'text/html' ? 'html' : file.type.split('/')[0];
+      const data = {
+        id: uuidv4(),
+				attachment: URL.createObjectURL(file),
+				name: this.participantService.getMyNickname(),
+        system: false,
+        type: ['image', 'video', 'audio', 'html'].includes(type) ? type : 'document',
+        datetime: new Date().toISOString(),
+        status: 'sending'
+			};
+      // await this.openviduService.sendSignal(Signal.CHAT, undefined, data);
+      this.messageList.push(data);
+      this._messageList.next(this.messageList);
+      var evt = new CustomEvent("SigmaChatSend", {detail: {
+        attachment: file,
+        id: data.id
+      }}); 
+		  window.dispatchEvent(evt);
+      return data.id;
+		}
+    return '';
+	}
+
+	launchNotification(options: INotificationOptions) {
 		this.actionService.launchNotification(options, this.panelService.togglePanel.bind(this.panelService, PanelType.CHAT));
 	}
+
+  // @HostListener('window:SigmaChatNewMessage', ['$event'])
+	// async handleNewMessage(event) {
+  //   var message = event.detail;
+  //   console.log(message);
+  //   console.log(this.panelService.isChatPanelOpened());
+  //   if(!message.type){
+  //     message.type = 'text';
+  //   }
+  //   message.type = message.type == 'text/html' ? 'html' : message.type.split('/')[0];
+  //   message.type = ['image', 'video', 'audio', 'html', 'text'].includes(message.type) ? message.type : 'document'
+
+	// 	this.messageList.push(message);
+
+  //   if (!this.panelService.isChatPanelOpened()) {
+  //     var name = message.name || this.translateService.translate('PANEL.CHAT.AGENT');
+  //     const notificationOptions: INotificationOptions = {
+  //       message: name.toUpperCase() + ' ' + this.translateService.translate('PANEL.CHAT.SENT_MESSAGE'), //'sent a message',
+  //       cssClassName: 'messageSnackbar',
+  //       buttonActionText: this.translateService.translate('PANEL.CHAT.READ')
+  //     };
+  //     this.launchNotification(notificationOptions);
+  //     this.messageSound.play().catch(() => {});
+  //   }
+  //   this._messageList.next(this.messageList);
+	// }
+
+  // @HostListener('window:SigmaChatStatusMessage', ['$event'])
+	// handleStatusMessage(event) {
+  //   var order = {
+  //     'sending': 1,
+  //     'failed': 2,
+  //     'sent': 3,
+  //     'delivered': 4,
+  //     'read': 5,
+  //   }
+	// 	const index = this.messageList.findIndex((message) => event.detail.id == message.id);
+  //   if(index > -1){
+  //     var oldStatus = this.messageList[index].status || 'sending';
+  //     if(order[oldStatus] > order[event.detail.status]){
+  //       return;
+  //     }
+  //     this.messageList[index].status = event.detail.status;
+  //     this._messageList.next(this.messageList);
+  //   }
+	// }
+
+  // @HostListener('window:SigmaChatFileMessage', ['$event'])
+	// handleFileMessage(event) {
+	// 	const index = this.messageList.findIndex((message) => event.detail.id == message.id);
+  //   if(index > -1){
+  //     this.messageList[index].attachment = event.detail.attachment;
+  //     this._messageList.next(this.messageList);
+  //   }
+	// }
+
+	// @HostListener('window:SigmaChatClear', ['$event'])
+	// handleClear(event) {
+	// 	this.messageList = [];
+  //   this._messageList.next(this.messageList);
+	// }
 }

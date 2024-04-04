@@ -2,7 +2,12 @@
  * @internal
  */
 export interface ChatMessage {
-	isLocal: boolean;
-	nickname: string;
-	message: string;
+  id: string;
+	system: boolean;
+	name: string;
+	message?: string;
+  attachment?: string;
+  type: string;
+  datetime: string;
+  status?: string;
 }

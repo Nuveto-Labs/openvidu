@@ -24,7 +24,7 @@ export class ActionService {
 	launchNotification(options: INotificationOptions, callback): void {
 		if (!options.config) {
 			options.config = {
-				duration: 3000,
+				duration: 6000,
 				verticalPosition: 'top',
 				horizontalPosition: 'end'
 			};

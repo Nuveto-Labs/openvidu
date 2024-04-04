@@ -9,6 +9,7 @@
     "lib": ["ES2020", "dom"],
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
     "declaration": true,
     "sourceMap": true,
     "declarationMap": true,

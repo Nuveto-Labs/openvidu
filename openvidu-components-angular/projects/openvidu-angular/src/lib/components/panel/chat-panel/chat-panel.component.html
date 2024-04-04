@@ -6,26 +6,163 @@
 		</button>
 	</div>
 
-	<div class="text-container" fxFlex="20px">
-		<p class="text-info">{{ 'PANEL.CHAT.SUBTITLE' | translate }}</p>
-	</div>
-
-	<div class="messages-container" fxFlex="75%" fxLayoutAlign="space-evenly none" #chatScroll>
-		<div *ngFor="let data of messageList" class="message" [ngClass]="data.isLocal ? 'right' : 'left'">
-			<div class="msg-detail">
-				<div class="nickname-container">
-					<p *ngIf="data.isLocal">{{ 'PANEL.CHAT.YOU' | translate }}</p>
-					<p *ngIf="!data.isLocal">{{ data.nickname }}</p>
-				</div>
-				<div class="msg-content">
-					<p [innerHTML]="data.message | linkify"></p>
-				</div>
-			</div>
+	<div class="messages-container sigma-messages" fxFlex="75%" fxLayoutAlign="space-evenly none" #chatScroll>
+		<div *ngFor="let data of messageList" class="message" [ngClass]="data.system ? 'sigma-assistent-message' : ''" [attr.id]="'sigma-message-' + data.id">
+			<!-- canReply canReact -->
+      <div class="sigma-message-options" style="display: none;">
+        <div class="sigma-option-emotes" onclick="showEmotions()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-emoji-laughing" viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
+            <path d="M12.331 9.5a1 1 0 0 1 0 1A4.998 4.998 0 0 1 8 13a4.998 4.998 0 0 1-4.33-2.5A1 1 0 0 1 4.535 9h6.93a1 1 0 0 1 .866.5zM7 6.5c0 .828-.448 0-1 0s-1 .828-1 0S5.448 5 6 5s1 .672 1 1.5zm4 0c0 .828-.448 0-1 0s-1 .828-1 0S9.448 5 10 5s1 .672 1 1.5z"></path>
+          </svg>
+        </div>
+        <div class="sigma-option-reply" onclick="sigmaReplyMessage()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-return-right" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M1.5 1.5A.5.5 0 0 0 1 2v4.8a2.5 2.5 0 0 0 2.5 2.5h9.793l-3.347 3.346a.5.5 0 0 0 .708.708l4.2-4.2a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 8.3H3.5A1.5 1.5 0 0 1 2 6.8V2a.5.5 0 0 0-.5-.5z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="sigma-emotions" style="display: none;">
+        <div>
+          <div class="class-sigma-emotion__happy" onclick="sendEmotion('happy')">
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 2000 2000">
+              <image id="Camada_1" data-name="Camada 1" class="cls-1" width="2002" height="2002" xlink:href="data:img/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAEkUlEQVQ4jX1US4wUVRQ99326umt6PnY3M8MQIsEwCeGTGUJw4QbCAjTKwoEFwY3IwgTNQFTcqERdGD8BidEVhg0aAkJMJApGFkRDAF2gEYmKoskwM8y3/91T9d69pmpm7a3c5Naruufd9865l1oPfgAggMqB4jFIXIZwFYju71Jubif5+hCJGwAlT2ZcyNwSU7jMtvdLsstBcIh1L6C6AYmxBOgBUwLcNFTlytNo332LfHkdJVuRBcggNXGA+MVQhXcQbjjKucFzTvUAFKTfVFIcKA9JCqheeU9Vr54nP78OKkySgAQQtOhJrLKpEzfWqurVs1S/fkxUB1IHwSh2EBVAzZ57H3Pfvmy6B4BSBlAA5jyimoD0UoEeyOQJKGhAuoCZNqRy87BVPeS7nzxM8KDqg2swzV922OnTl8yyEqK64ZPn63G9znhuJG+KK42Op3x6kEyvwvx9zye/aPgwJBzYnddBp1duagq+tPcp7th8UWmOoOvXTukwwFzV8JET5daDMgt1KHn1o0r7z79iNt0E20X4+57jIycqkWQJ0zWWV46X45l5LbojB2rcOMUSQ79xcPhx3fjxeV0s4vur7bjRFnntnULuse2hmfo95vExx0NbsoYs4euLTV8qaBo9WrBbt+f0rzcW2DWE1mzsVFKdCpUOblH7txc/Ve3b+2EKiGORMEdwLJTcl80Q2m1hraASTryDZHNEcSwgBRhFaLZErCWCKwPB4GlDfnYICUNOEHYQIUcw0aI0YQnZHClEkpJiM0TJutVLxGcIoQJFzWSDHMDV9YYkGkjkkEit1RRxVfZKgRYh/t+EIcaQNgYEsQC3iwaSChG2V+P6dy0+fLzC/UWlFBEiMFXBWACnBWeh0AmFAEpYgIkZLx+MdvttO3MmnnBp1UZUboJ8uR8cotRJNDPHmZmWx6x1KEFjEFlZTSY94bQ4/IEFmkaMkrNwdUpyGJwcJAaoc87ALr9F0diwzGexdijA5k3WX/6ppY6s6vVPcBetRkB56BSwBsY9LPAlVZF3/53WW4cD3jAckMwz4BuQzMO3jWQGLkiDnnWRwIakXtqXj0Zu9vHeSsGix6HsPcpY7F8LwiYdYlO5C4/4jmjFM3VBHoErJ00n4Oya89QY/wZm9rNJiif6YHpgV5DgQs6NvR0oMaJtPwNLrZfgxpMKiIhXvr7gsaet4zFR5MpgW5x1hX0lRRRCwi37iRcA7+EmQTJSM4VjVQ42OMdVYj+pJPEkDta7uHis5mVPzbgJUYk4wU1wfvsBsStA7YkbgC6CKmc/pMpXo9B9gDbQyz24Rhz/bMRPLpao+z3sRgfVJdpP6FTpxDPw+W2fuJ6Rg8rXEpaTcWQhXTsOKTcOat4ZBTLwYyEoCxU8GgM2WhRyROCKgh9LXprpfOTs2o+lZ9cL2nSmTJv0YriRzDdwx+ZD0Muu6/adN+Erg9IG/EIyYJdaQzwoWUxMdd71ucGjkln5ueLW4mwjmwAmlvwcgXwdHKw6w7bvDEX/7Iab2gluryOJe1Nlq2Ca1bLbYh+6JKb/HOsQittpbtqrEPwHD7xIhN7FrvQAAAAASUVORK5CYII="></image>
+            </svg>
+          </div>
+          <div class="class-sigma-emotion__furious" onclick="sendEmotion('furious')">
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 2000 2000">
+              <image id="Camada_2" data-name="Camada 2" x="6" y="8" width="1988" height="1984" xlink:href="data:img/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAEEUlEQVQ4jU2US4gdRRSGv1PVj9v3kcwkcWY0E42gCBLDgGajLsQoZBFUFFFQERI3GhUScDO4EELcuBAfcakgEUQFzTIrIYqKaIyGCD4gCRpJMjPGce6zu6qOVN+bYDVFV1dV/+c/5/znyN+L+8AapDfCrCkhZGi/QpPGbimrXTocLQCbUQD5iyz9UfLimGm3j2rvHzAldsv1IBZCIOH/QwV8eEAoDzIabo8XJDcRiBpQdSvV6E513WdD1f0ZzCtS2I+RyR2EBA1o/IibfnDQoC9rIx5FEDu2pjImGA0Gg4jGu7dqpR8Rmq+LcoAkgob4akCw4FcPkVeLEqnX1hQJTIC03pOgkAhaRmyLbSs66O/Xy39ip6cP4BzGZxGgvDsxw0VpWWgKUoBpAAVIZFt/K9KKJBQtI1NUR6LSNmi5st+tLt9fVSOSzA7Arx2hEbBiJ6HSmppEF2uGcT32GCOIB3VgWmAKg/qEIIMjmtnZRAq3U3A3KCYmm7xhcQPP0GkdqxpIJ6DxaQbIIAsi+UbLsOtxTrChmpGketCYzD0qeaCYthxf6fH2yWVMR2jPJkgG5BO348xDTbVzXUI+Jxz+aYnPV3o019v63OTuESNJtSCF4K1n+/UZ0lIOfXeJc90hzfmEZgdIA5oHGm2hNZ9xvl/y6ollfENY2NLAJQEaBpP62wyZm6MhOOuZ6Rj2PTRbx3Hra7/xxhdLXFRHth6yjrAsjne+WWL+zV9YrRwv7p7j2o7gEocUCrnfmEijFkYdqzIE0n9HPHFHhzJu2MCplSH33tyqhXT6/BAvnsWdm3hyW4fQHVAmAZNMMqeKDD95/FuUHVeqQZ3SKAy0EqgUv+aoqnHWU2uwUVpRxF3PsO8QY8ZijRo15mRCkZ6SarADmVRhBiUBemXNOt1gsWn8YWwwrDqqUUy5jHU5kVjNDj2dSGf9Z9Lr7lGxV12PGsvXGbDC1yf6nFt2VAGuaRl23d4kTw2jy2FcwkwEGhzeFkdl8P1LmN7Zi+LLGSSvLdmG4cwFx6df9ikK4ca5hDQRzl5wXFr2PHxXm1s2J7jeuCQJFUi25pvzU0nIc7CzTyX9M8c0RjdaayrdgWPhpoT77mmN3fJRk4avjvfpDqtaJvhJInyJtrbssY3pIMPfD6O2gen/8JYZ/Pq82jbqhKxtIBXcZT/uRpPAp+ssOCjXossRbITPZt7zxdY9kWmiSWTYIRTzLxDOGwn+OcmEqgLizK90m/GoqljIsYYj5UAw7Xe92bQ3qEdwxMqGMEJ8Rcg27QvJ1NNgz9b79ZyA1X0irj2IQ9P0D19seMbnU3vxftzaNDbYqyM2P4ea/P2QZh9IKB8jDHdB2CYaZsZ+2yUlPY1Jj4Vs6kM1UkrZR8ddE4D/AGn89Vw55o2yAAAAAElFTkSuQmCC"></image>
+            </svg>
+          </div>
+          <div class="class-sigma-emotion__heart" onclick="sendEmotion('heart')">
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 2000 2000">
+              <image id="Camada_4" data-name="Camada 4" x="10" y="10" width="1980" height="1980" xlink:href="data:img/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAELUlEQVQ4jXWU3W9URRjGn3fO2bNn2223WLof3W6JhW0NWGJriPFC60dF0xgDUv4BTQGttHgFFwYt0fhx1ZgYiOFCrkhEKNwYUKHBVmxRlFJASCwFu2y3pV3aZT+652PGzDktitRJJntmZ97fPO8z7wyJ34YBnw6RSMG+dh2ojYGyWdDV0VcpNfUKCvknkM9FiQjC40kiUHFJRCKn7LrVx6F6oc6kwR+vB62JAbkCXKCuQUzPwZ64DUolNrEL5/fR9FQjhAA8GuD1wvm2LKC4AAiAh0JXsbbxA9TWHRGrY6BYEMgvgMHmgKZDBMrAfhn6WDlxtI9SqUb4y+B0CSMCGAM8Hve/8nKw6em17IeTX2PoXK/w+0E+HwgCql3ig1jxCJS+vk9o4MxuRGsAzoHEhIQIyMYYOb+2LRy4bRPCEcDjBxse7MaqMLM6t3fJTMmYvAUaHGxVP/v0e4TCQDYLGEVuvraZW03NJNP0nO3nxDmZLS+Q0DSooyPCc/wYg8IYygNAMglz585NoqXlBJnnB6D0fp6gmzeiMhXkcrzw/odW8cWXVJmoFEYAh+uiIscc4N6Bs3bJe3sU6DpDPg8Riabt3Xsqlb1PNm9U+k+/jaogcDshjLfesQuvb9XUwgJRIQ8qFkFCEFkWo7w7ZrZN5po4Y7puq9+dZAhHiJIJnwiHR5ny51i7449hACuDwnz2ecWRZRruYchumm5fGluWlErmM88xRKoFFhYARQG7cnkLQzLRhLJyaTSg65AeOSdA7jks25bmNI3g87mxkpGabGRUyEec0pA9mSTlxpg8Y/ek/69x7pjKbo4JTPxFUgikEMOoZI7VsimKhJL34AEw07R4ILA8VMICATCbW/qBLwQUlaCqrmohwITum3L8k+BwGGx0RC3t7BBk2w9DF2GyEku7doBd+FVFJOLGFosQXj3NUBW6iFzW3UEGr6qD8tOAp3THmw9C/w3r3CaU/tMqHq1z52RsZh4iGr3CEI8flXfT2cVJXwDxx6Cc+wcqAgGI/8LqG1zVS5ZJcHXNMWasX/+tqK1NYTbt3tdloBywuAPreBgmY9KzQE1sjm/Y8A0TVZWwWlvfQCHv1uKiufehwz97/Pv2Cv9HPVwZ+PFBmFwrY7I5iPat26ipiZMxfg0iFIKyf3+v8tWhbsRi7quyFCAVTCbdcXXUTW1pTj5niQnYm7cc5Lve7aCZWahU6gP5NIj29l18/Baxi793QVt8pqRQWbTBkKtKfksnJSx7DzBM4KmnvzTb2rZbmTlQ5i5UZ9G9DCiTgb3x5W6srBqiSyM9dDcdd66M5gVUj8O5fwWlq4GKcd7U3EMN6w45L3wxAFJVqM7OxJw6ork0EG84bMdih+n6H+10Z6aN8rl1VCwG5SpRUnIHmvcyrwqeQn3DEVpRYWN+HigvcRkA/gbVN/jG3J86aAAAAABJRU5ErkJggg=="></image>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="class-sigma-emotion__surprise" onclick="sendEmotion('surprise')">
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 2000 2000">
+              <image id="Camada_3" data-name="Camada 3" x="6" y="6" width="1988" height="1988" xlink:href="data:img/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAEZ0lEQVQ4jVWVWWhcZRTHf+f77p2ZLJNk0iRNm1i3oKFxiSIilhYVo1XR4oNviogvUnF9EESlLo+CUqr1TV8UsWJMRbG4YxWMDzZVE1OlrkljEzMznSWZuct35M6k2hw4L/ec8z/b/55PKkvHQNIQL2KCWRQPiQqYYO52CZdvFF0ZResDACqpeTUdRzXVd4j02e+KtCNBGde+FUl1ggtZA/TBlSH6FVudvSPD1LPYyrBWYqLIA5uiIXGIbwPICrie2UBH9qg/dEBbz0f8FLgYr5HZtIEofvHwC1KdeuSnvwz5Sgtbz0vT0SFJ4oaYTJpCyWdmOqSnfWH43C1zb5n08tVxdvRhjAUtYYz1MV4Gvzj+ol/96pFKrY1Q2+npMpRXHBjhPxGorGjDFpClWu/A1r5+yBQP7lWXReMUxgRVvPzELbYw8XDk+unuy3DJSEbLpaLrba9ijIcqTXXKWVt8RWMuGAjJ9WSIXS+m8M6DcurQrZDGEJ1ASh++piaN35mhUHJ67V3T+uSBHXpk6ZqoWlnE82hq1vDcS0uy7b7466df37R3uVjHy6ZR04Ipf/iqBr9gCH+9jWixF9uFtMLJuYgvvlP55bdF++YHJ8SIr8YKiRLBR5MBy/kg9/6XxXP+ORE3YrA5CBZ6pDa9yz513/DjEs6PYtqh7ujZZDl/c4fOzszoPTeckpEr+k1UjpIFIq3ChZvS+tff5b47x2rDO8c6cRWHqiBuFWx7KPUf7/5ewqWLMS2oA+uD7bI0phYhVBx02+Za8jG0G/CSRSlx0SVMQgzg6uB1TXkSl/oxrQ2HxOCiZqBNdpoAtRmdmqwpKoxelhJ8EZZj4gTDrYE1OJXwsN7tNbiArqNGAmo3WpbmI/fo80Wd/CFocOfKi1L6wmNd2jfgGXcyhrXC/xfFqGn5Gw3WffbahLDqdPczBQ5+XrM9Xdb0dBlz8Iua2f1MQYOq08RnPVY92XbeYDdMSVxtlna6yG7DJ5+tcvj7QC4b9vE98D3h8mGfw0cD+8mnqyobzBlogsQr4G2YNi5z9ji49W17wvGFWJPByRmFmDWM4wtJu2dWmMTGuMwF40bbtk1oavAfonwS0rQ72JgzyXlhXWPaDG3Y3H9pIC6g/mBeWi4ZN2pzRB3X3Su6SnOWAkXH9dtbGBqw7tifEUmVif78Z8TQZuvGdmSEYtz01Tq4FeLcrntd+lwMrobL7nwv7ty1X8IF0JCwpOQGrdn3RE639Ft37PeI2T8iHdxo3b4nc5ob9CQs0fAlOolmb36FzPYJqeeRYGkWtR0kLGZp38umPLmb5JyZVvx+S3kuch9/U290PnZVWrNn+SZciMBVQWto2+X76X7gfjS5qacSwBmQxp9BFM4hK0fuNJVv90hcGkrm5HdlIJccWIFCnai4ihpBve7jcevFeySz9Q2TugjIAMFpwAS9Qhz8TnJ1qP2MBPN32Lh8E648ggZ9a0/AIqZzWr22Q5oZetvZXjVxFZO+FEwOtM6/S3ISzETq7W8AAAAASUVORK5CYII="></image>
+            </svg>
+          </div>
+          <div class="class-sigma-emotion__sad" onclick="sendEmotion('sad')">
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 2000 2000">
+              <image id="Camada_5" data-name="Camada 5" x="6" y="6" width="1988" height="1988" xlink:href="data:img/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAEJklEQVQ4jYWUWWxUZRTHf+e736ztTOlMWSyLFESEUFBAFFEiCQmJQuwDETBqY3wwmljUxBg14cnlwURC0cRISPRBJLwoiws+mLgSnxRMSNkKYZFCO0tnOkvv8n3mTgumLPG83XvP/Z9z/v//OTKSP4sFHLFgBIhhTcGR6pGnVK3vcfGHlkhQnkYYqnnARCYfNfEF39jkoj3EFgZ4JaxWoARMlDFAG+DoFFaacQpfb5Hhb99V3oUOrMU6zaCSDTxMDTEjYH1MdNZZm9n8tp/e8CVUgDKYBDKSO9X4STkpnKuf7lD5L3pEpbE6A4QdWyaGNJ7Ez4Ep4Wee7fWn9WwVM4x4AdrqLERaUQM7e52h3S/b2FysxMJ2bgHG9XdWt4FtRud29Qgaf8pLWy1FpFKxqOEfu/Sl17+ykXaQ+G2AbhUhb3XEu4g388Mu27Jmv1SLeaXP9+SpnWuJtLZDGghsqBKUDW7ZIs54bwFEUwIp9V9OCbzCP5C8s+jP6M1qKj9vltETLZKZzel+OHP8IvOaSvRXkrTPm8X8+QpTNQ1AJyUc7xPOn7rA3c1l+qtNdCyYxew5d2CLpydR/mmTVpW/NoFCIkKtfoWP+1fyS2QxS0ZP88H0X1E6ixkfVrQwUrtCb//DHIkuYrl3ku0dv6N0G4EonNqfT2pxzy0OFfVzPp2dRTbeu56Dg4+yLtvH/fxAkG8BPTaznw9YsaLMxgee4LvBVazLHGMRhwnyk7DOJMS90KklKLWFPhMFVCOURoYavFTdAUg6OEmFk3XGjFsyUNIMVwYbtqu6VyCtQYdWSoAZmayv+erG8AOgTeHmLZ99UqJUtnStTXDXUgdz6va6K+ukBjHVmz6kkoJbMLz1UYlC1ZKaoXlnd4kzv9WZPlnd5CwxVUIsLZGZR6n3daCaJiTMmOJwaEeZRCTBG+9nG968JyPs33Oe1m2h5BPgIChimx/8WwdNy/fp0vddN1r5asGwfFmMpdkmbL+HrRhWLY4xxUlyoBDckG3BGkzivn0qaFm318YXFsW7HDLAtTUZKgYsfCjO7DkarxjgG9BaWLA6QTwSdnSdNfCvYuPzCpJYtlcZFbNe9uluGlekFiZ4YVpEj6kaVGzDfyLg+RaKZqyijDEXrl6ogZ95vjuITLdK3DxBeu2BoO2Fnbj9YOvR8dLB/y61HVW4ZzCZ53ZIes1Bx6+gI6JRpk4w9cUe1MmgeK78Cu51M4VLMoH+ECa0JC6S03Vof2a7tHa/5phwsDo6bEIFZQIcbHbbq6tt4cjUs7yXd0fn4g0gkho/sOFlqYK5JLl6lWySy491PPKmza783PrDWAlrK6ReLOIQ4OOgfRcTi/JHJaVyxRNbNsiu9dbLd1pTmxaqaJ30QDTeemy/2304ne3ct6ZltOaXLmPUKDjtYH3+BZIY2wiR2PuSAAAAAElFTkSuQmCC"></image>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="sigma__show-message-options" onclick="showMessageOptions()" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+          <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"></path>
+        </svg>
+      </div>      
+      <div  [ngClass]="data.system ? 'sigma-message-incoming-' + data.type : 'sigma-message-outcoming-' + data.type">
+        <div [ngClass]="data.system ? 'sigma-message-incoming-' + data.type + '-content' : 'sigma-message-outcoming-' + data.type + '-content'">
+          <p [ngClass]="data.system ? 'sigma-message-incoming-name' : 'sigma-message-outcoming-name'"> {{data.name}}: </p>
+          <!-- content text-->
+          <p *ngIf="data.type == 'text'" [ngClass]="data.system ? 'sigma-message-incoming-text-msg' : 'sigma-message-outcoming-text-msg'"> {{data.message}}</p>
+          <!-- content audio-->
+          <div *ngIf="data.type == 'audio'" class="sigma-flex-row">
+            <div class="sigma-audio-button" (click)="playPauseAudio(data.id)">
+              <svg class="sigma-btn-play" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"></path>
+              </svg>
+              <svg class="sigma-btn-pause" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="display: none">
+                <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"></path>
+              </svg>
+            </div>
+            <div [attr.id]="'waveform-' + data.id" ></div>
+            <div class="sigma-time-audio-content">
+              <p class="sigma-time-audio"></p>
+            </div>
+          </div>
+          <!-- content video-->
+          <video *ngIf="data.type == 'video'" [ngClass]="data.system ? 'sigma-message-incoming-attachment-video' : 'sigma-message-outcoming-attachment-video'" controls>
+            <source src="{{data.attachment}}" type="{{data.type}}">
+            {{ 'PANEL.CHAT.VIDEO_NOT_SUPPORTED' | translate }}
+          </video>
+          <!-- content html-->
+          <iframe *ngIf="data.type == 'html'" class="sigma-iframe-video" src="{{data.attachment}}" frameborder="0" allowfullscreen></iframe>
+          <!-- content image-->
+          <div *ngIf="data.type == 'image'" class="sigma-attachtment-content-options">
+            <img [ngClass]="data.system ? 'sigma-message-incoming-attachment-image' : 'sigma-message-outcoming-attachment-image'" src="{{data.attachment}}">
+            <div [ngClass]="data.system ? 'sigma-message-incoming-image-download-content' : 'sigma-message-outcoming-image-download-content'">
+              <div class="sigma-options-attachment">
+                <a [ngClass]="data.system ? 'sigma-message-incoming-image-download' : 'sigma-message-outcoming-image-download'" href="{{data.attachment}}" target="_blank">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
+                    <title>{{ 'PANEL.CHAT.OPEN' | translate }}</title>
+                    <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"></path>
+                    <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"></path>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+          <!-- content document-->
+          <div *ngIf="data.type == 'document'" class="sigma-flex-row">
+            <img class="sigma-message-document-img" src="/dist/img/file.png"/>
+            <a class="sigma-message-document-link" href="{{data.attachment}}" target="_blank" download="{{filename(data)}}">{{filename(data)}}</a>
+          </div>
+        </div>
+        <div class="sigma-time">
+          <div [ngClass]="data.system ? 'sigma-message-incoming-time' : 'sigma-message-outcoming-time'">
+            <div *ngIf="!data.system" class="sigma-status-message">
+              <svg *ngIf="data.status == 'sending'" class="sigma__status-sending" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock" viewBox="0 0 16 16">
+                <title>{{ 'PANEL.CHAT.MESSAGE.SENDING' | translate }}</title>
+                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
+                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/>
+              </svg>
+              <svg *ngIf="data.status == 'sent'" class="sigma__status-sent" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <title>{{ 'PANEL.CHAT.MESSAGE.SENT' | translate }}</title>
+                <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"></path>
+              </svg>
+              <svg *ngIf="data.status == 'delivered'" class="sigma__status-delivered" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <title>{{ 'PANEL.CHAT.MESSAGE.DELIVERED' | translate }}</title>
+                <path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.208 7-.896-.897.707-.707.543.543 6.646-6.647a.5.5 0 0 1 .708.708l-7 7a.5.5 0 0 1-.708 0z"></path>
+                <path d="m5.354 7.146.896.897-.707.707-.897-.896a.5.5 0 1 1 .708-.708z"></path>
+              </svg>
+              <svg *ngIf="data.status == 'read'" class="sigma__status-read" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <title>{{ 'PANEL.CHAT.MESSAGE.READ' | translate }}</title>
+                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"></path>
+                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"></path>
+              </svg>
+              <svg *ngIf="data.status == 'failed'" class="sigma__status-failed" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <title>{{ 'PANEL.CHAT.MESSAGE.FAILED' | translate }}</title>
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"></path>
+                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"></path>
+              </svg>
+            </div>
+            <p class="sigma-time-message"> {{formatDate(data.datetime)}}</p>
+          </div>
+        </div>
+      </div>
+      <div class="sigma-emotion-message" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 2000 2000">
+          <image id="Camada_2" data-name="Camada 2" x="6" y="8" width="1988" height="1984" xlink:href="data:img/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAEEUlEQVQ4jU2US4gdRRSGv1PVj9v3kcwkcWY0E42gCBLDgGajLsQoZBFUFFFQERI3GhUScDO4EELcuBAfcakgEUQFzTIrIYqKaIyGCD4gCRpJMjPGce6zu6qOVN+bYDVFV1dV/+c/5/znyN+L+8AapDfCrCkhZGi/QpPGbimrXTocLQCbUQD5iyz9UfLimGm3j2rvHzAldsv1IBZCIOH/QwV8eEAoDzIabo8XJDcRiBpQdSvV6E513WdD1f0ZzCtS2I+RyR2EBA1o/IibfnDQoC9rIx5FEDu2pjImGA0Gg4jGu7dqpR8Rmq+LcoAkgob4akCw4FcPkVeLEqnX1hQJTIC03pOgkAhaRmyLbSs66O/Xy39ip6cP4BzGZxGgvDsxw0VpWWgKUoBpAAVIZFt/K9KKJBQtI1NUR6LSNmi5st+tLt9fVSOSzA7Arx2hEbBiJ6HSmppEF2uGcT32GCOIB3VgWmAKg/qEIIMjmtnZRAq3U3A3KCYmm7xhcQPP0GkdqxpIJ6DxaQbIIAsi+UbLsOtxTrChmpGketCYzD0qeaCYthxf6fH2yWVMR2jPJkgG5BO348xDTbVzXUI+Jxz+aYnPV3o019v63OTuESNJtSCF4K1n+/UZ0lIOfXeJc90hzfmEZgdIA5oHGm2hNZ9xvl/y6ollfENY2NLAJQEaBpP62wyZm6MhOOuZ6Rj2PTRbx3Hra7/xxhdLXFRHth6yjrAsjne+WWL+zV9YrRwv7p7j2o7gEocUCrnfmEijFkYdqzIE0n9HPHFHhzJu2MCplSH33tyqhXT6/BAvnsWdm3hyW4fQHVAmAZNMMqeKDD95/FuUHVeqQZ3SKAy0EqgUv+aoqnHWU2uwUVpRxF3PsO8QY8ZijRo15mRCkZ6SarADmVRhBiUBemXNOt1gsWn8YWwwrDqqUUy5jHU5kVjNDj2dSGf9Z9Lr7lGxV12PGsvXGbDC1yf6nFt2VAGuaRl23d4kTw2jy2FcwkwEGhzeFkdl8P1LmN7Zi+LLGSSvLdmG4cwFx6df9ikK4ca5hDQRzl5wXFr2PHxXm1s2J7jeuCQJFUi25pvzU0nIc7CzTyX9M8c0RjdaayrdgWPhpoT77mmN3fJRk4avjvfpDqtaJvhJInyJtrbssY3pIMPfD6O2gen/8JYZ/Pq82jbqhKxtIBXcZT/uRpPAp+ssOCjXossRbITPZt7zxdY9kWmiSWTYIRTzLxDOGwn+OcmEqgLizK90m/GoqljIsYYj5UAw7Xe92bQ3qEdwxMqGMEJ8Rcg27QvJ1NNgz9b79ZyA1X0irj2IQ9P0D19seMbnU3vxftzaNDbYqyM2P4ea/P2QZh9IKB8jDHdB2CYaZsZ+2yUlPY1Jj4Vs6kM1UkrZR8ddE4D/AGn89Vw55o2yAAAAAElFTkSuQmCC"></image>
+        </svg>
+      </div>
 		</div>
 	</div>
 
 	<div class="input-container" fxFlex="55px" fxFlexOrder="3" fxLayoutAlign="space-evenly none">
-		<textarea
+		<button *ngIf="recorded" mat-icon-button id="remove-audio-btn" (click)="clearAudio()">
+			<mat-icon matTooltip="{{ 'PANEL.CHAT.REMOVE' | translate }}">delete</mat-icon>
+		</button>
+		<button *ngIf="recorded" mat-icon-button id="remove-play-pause-btn" (click)="playPause()">
+      <mat-icon *ngIf="!playing" matTooltip="{{ 'PANEL.CHAT.PLAY' | translate }}">play_arrow</mat-icon>
+      <mat-icon *ngIf="playing" matTooltip="{{ 'PANEL.CHAT.PAUSE' | translate }}">pause</mat-icon>
+    </button>
+		<button *ngIf="!recording && !recorded && file" mat-icon-button id="remove-btn" (click)="clearFile()">
+			<mat-icon matTooltip="{{ 'PANEL.CHAT.REMOVE' | translate }}">delete</mat-icon>
+		</button>
+    <button *ngIf="!recording && !recorded && !file" mat-icon-button id="attach-file-btn" (click)="fileInput.click()">
+			<mat-icon matTooltip="{{ 'PANEL.CHAT.ATTACH' | translate }}">attach_file</mat-icon>
+      <input #fileInput type="file" (change)="onFileInput($event)" style="display:none;" />
+		</button>
+    <textarea
+      *ngIf="!recording && !recorded"
 			#chatInput
 			maxlength="500"
 			rows="4"
@@ -34,9 +171,15 @@
 			(keypress)="eventKeyPress($event)"
 			[(ngModel)]="message"
 			id="chat-input"
+      [attr.disabled]="file"
 		></textarea>
-		<button mat-icon-button id="send-btn" (click)="sendMessage()">
-			<mat-icon matTooltip="{{ 'PANEL.CHAT.SEND' | translate }}">send</mat-icon>
+    <div [hidden]="!recording && !recorded" id="mic" style="width: 100%"></div>
+		<button *ngIf="!recording" mat-icon-button id="send-btn" (click)="sendMessage()">
+			<mat-icon *ngIf="message.length > 0 || recorded" matTooltip="{{ 'PANEL.CHAT.SEND' | translate }}">send</mat-icon>
+			<mat-icon *ngIf="message.length == 0 && !recorded" matTooltip="{{ 'PANEL.CHAT.RECORD' | translate }}">mic</mat-icon>
+		</button>
+		<button *ngIf="recording" mat-icon-button id="stop-btn" (click)="stopRecording()">
+			<mat-icon matTooltip="{{ 'PANEL.CHAT.STOP' | translate }}">stop</mat-icon>
 		</button>
 	</div>
 </div>
